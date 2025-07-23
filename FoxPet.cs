@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Godot;
+using System.ComponentModel.DataAnnotations;
 
 public partial class FoxPet : AnimatedSprite2D
 {
@@ -9,40 +10,81 @@ public partial class FoxPet : AnimatedSprite2D
     [Export] public float Speed = 30f;
     [Export] public float TopOffset = 50f;
     [Export] public float BottomOffset = 50f;
+    [Export] ClickThrough clickThrough;
+    [Export] private Control UiNode;
 
     // ────── Internal ──────
-    private enum FoxState { Moving, Idle, Sleeping }
+    private enum FoxState { Moving, Idle, Sleeping, Mad }
     private FoxState _state = FoxState.Moving;
 
     private float _stateTimer = 0f;
     private float _idleDuration = 0f;
     private float _sleepDuration = 5f;
-
+    private float _madDuration = 3f;
+    private Vector2 _mousePosition;
     private Vector2 _spriteSize;
+    private AnimatedSprite2D _sprite;
     private float _targetX;
     private Random _rng = new Random();
-
     private RECT _workArea;
+    private bool _isDragging = false;
+    private Vector2 _dragOffset;
+    private Vector2 _uiSize;
+    
 
     public override void _Ready()
     {
         // Cache sprite size once
-        _spriteSize = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame()).GetSize();
-
-        UpdateWorkArea();
+        var tex = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame());
+        _spriteSize = tex.GetSize();
+        _uiSize = UiNode.Size;
+        clickThrough.SetClickThrough(false);
         _targetX = GetNewTargetX();
         Play("Idle");
+        _sprite = this;
+        var body = GetNode<Area2D>("ClickLogic");
+        body.InputPickable = true;
+        body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
+        UiNode.Connect("SpawnMorePressed", new Callable(this, nameof(OnButtonPress)));
     }
 
     public override void _Process(double delta)
     {
+        IntPtr currentForeground = GetForegroundWindow();
+        IntPtr foxWindow = GetFoxWindowHandle();
+
+        bool hoveringUI = IsMouseOverUI(UiNode);
+        clickThrough.SetClickThrough(!hoveringUI);
+
+        if (currentForeground != IntPtr.Zero && currentForeground != foxWindow)
+        {
+            _previousWindowHandle = currentForeground;
+        }
+
         UpdateWorkArea();
         HandleFoxBehavior((float)delta);
+
+        _mousePosition = GetViewport().GetMousePosition();
+
+        if (_isDragging)
+        {
+            GD.Print("Dragging.");
+        }
+
+        // Check if mouse is over opaque pixel of the fox sprite
+        bool hoveringOpaque = IsMouseOverOpaquePixel(
+            SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame()), 
+            _mousePosition, 
+            Position, 
+            _spriteSize, 
+            0.5f);
+
+        // Toggle click-through purely on pixel opacity under mouse
+        clickThrough.SetClickThrough(!hoveringOpaque);
     }
 
     private void HandleFoxBehavior(float delta)
     {
-        AlignYToWindowTop();
         switch (_state)
         {
             case FoxState.Moving:
@@ -60,6 +102,12 @@ public partial class FoxPet : AnimatedSprite2D
                 if (_stateTimer >= _sleepDuration)
                     TransitionTo(randomSleep: false);
                 break;
+
+            case FoxState.Mad:
+                _stateTimer += delta;
+                if (_stateTimer >= _madDuration)
+                    TransitionTo(randomSleep: false);
+                break;
         }
     }
 
@@ -69,12 +117,11 @@ public partial class FoxPet : AnimatedSprite2D
         float direction = _targetX > pos.X ? 1f : -1f;
         pos.X += direction * Speed * delta;
 
-        float left = _workArea.Left;
-        float right = _workArea.Right - _spriteSize.X;
-
         pos.X = Mathf.Clamp(pos.X, _workArea.Left, _workArea.Right - _spriteSize.X);
-        pos.Y = _workArea.Top + TopOffset;
-
+        //Removed the top of window logic for now
+        // pos.Y = _workArea.Top + TopOffset; 
+        //below will snap it to the bottom
+        pos.Y = _workArea.Bottom - _spriteSize.Y - BottomOffset;
         Position = pos;
         FlipH = direction < 0;
         Play("Running");
@@ -99,56 +146,39 @@ public partial class FoxPet : AnimatedSprite2D
 
         if (_state == FoxState.Sleeping)
             Play("Sleeping");
+        else if (_state == FoxState.Moving)
+            Play("Running");
     }
 
     private float GetNewTargetX()
     {
         float left = (float)_workArea.Left;
         float right = (float)(_workArea.Right - _spriteSize.X);
+
+        if (right <= left)
+            return (_workArea.Left + _workArea.Right) / 2f;
+
         float randomX = (float)_rng.NextDouble() * (right - left) + left;
         return Mathf.Clamp(randomX, left, right);
-
     }
 
     private void UpdateWorkArea()
     {
-        RECT rect = new RECT();
-        IntPtr activeWindow = GetForegroundWindow();
-        bool useFallback = false;
-
-        // Get the active window's rect
-        if (activeWindow == IntPtr.Zero ||
-            activeWindow == GetFoxWindowHandle() ||
-            !GetWindowRect(activeWindow, out rect))
+        // Only update work area to the foreground window if dragging
+        if (_isDragging)
         {
-            useFallback = true;
-        }
-        else
-        {
-            int height = rect.Bottom - rect.Top;
-
-            // If window is too small or too tall to host the fox
-            if (height < _spriteSize.Y + TopOffset || rect.Top < 0)
-                useFallback = true;
+            RECT rect;
+            IntPtr activeWindow = GetForegroundWindow();
+            if (activeWindow != IntPtr.Zero && GetWindowRect(activeWindow, out rect))
+            {
+                _workArea = rect;
+                return;
+            }
         }
 
-        if (useFallback)
-        {
-            // Fall back to taskbar (bottom of primary screen)
-            SystemParametersInfo(SPI_GETWORKAREA, 0, out rect, 0);
-            rect.Top = rect.Bottom - (int)(_spriteSize.Y + BottomOffset);
-            rect.Bottom = rect.Top + (int)_spriteSize.Y;
-        }
-
-        _workArea = rect;
+        // Default fallback: taskbar/desktop
+        SystemParametersInfo(SPI_GETWORKAREA, 0, out _workArea, 0);
     }
-
-
-    private void AlignYToWindowTop()
-    {
-        Position = new Vector2(Position.X, _workArea.Top + TopOffset);
-    }
-
 
 
     // ────── Windows API ──────
@@ -157,20 +187,80 @@ public partial class FoxPet : AnimatedSprite2D
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
     [StructLayout(LayoutKind.Sequential)]
-    public struct RECT
-    {
-        public int Left, Top, Right, Bottom;
-    }
+    public struct RECT { public int Left, Top, Right, Bottom; }
 
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetActiveWindow();
+    private IntPtr _previousWindowHandle = IntPtr.Zero;
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, out RECT pvParam, uint fWinIni);
-    [DllImport("user32.dll")]
-    private static extern bool SystemParametersInfo(int uAction, int uParam, ref RECT lpvParam, int fuWinIni);
     private IntPtr GetFoxWindowHandle()
     {
         return Process.GetCurrentProcess().MainWindowHandle;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, out RECT pvParam, uint fWinIni);
+
+    // ────── User Input ──────
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    private const  float CLICK_THRESHHOLD = 32.0f;
+    private void OnInputEvent(Node viewport, InputEvent @event, int shapeIdx)
+    {
+
+
+        if (@event is InputEventMouseButton mouseEvent)
+        {
+            if (mouseEvent.Pressed && (mouseEvent.GlobalPosition - Position).Length() < CLICK_THRESHHOLD)
+            {
+                _isDragging = true;
+            }
+            else if (_isDragging && mouseEvent.IsReleased())
+            {
+                _isDragging = false;
+            }
+            if (mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Left)
+                {
+                    GD.Print("Left mouse button clicked on the fox!");
+                    _state = FoxState.Mad;
+                    _stateTimer = 0f;
+                    Play("Mad");
+                    _isDragging = false;
+
+                    if (_previousWindowHandle != IntPtr.Zero)
+                {
+                    SetForegroundWindow(_previousWindowHandle);
+                    GD.Print("Restored focus to previous window.");
+                }
+                }
+        }
+    }
+
+    private void OnButtonPress() {
+        GD.Print("Button Pressed");
+    }
+
+    bool IsMouseOverUI(Control control)
+    {
+        Vector2 localPos = control.GetLocalMousePosition();
+        return control.GetRect().HasPoint(localPos);
+    }
+
+
+    bool IsMouseOverOpaquePixel(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
+    {
+        // Convert global mouse position to local coordinates relative to the sprite center
+        Vector2 localPos = ToLocal(mousePos);
+
+        // Offset localPos to sprite texture space (top-left origin)
+        int x = Mathf.Clamp((int)(localPos.X + spriteSize.X / 2f), 0, (int)spriteSize.X - 1);
+        int y = Mathf.Clamp((int)(localPos.Y + spriteSize.Y / 2f), 0, (int)spriteSize.Y - 1);
+
+        Image image = texture.GetImage();
+
+        if (image == null)
+            return false;
+
+        Color pixelColor = image.GetPixel(x, y);
+        return pixelColor.A >= alphaThreshold;
     }
 }

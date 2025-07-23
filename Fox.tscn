@@ -1,8 +1,9 @@
-[gd_scene load_steps=24 format=3 uid="uid://vtu0y4hh6svo"]
+[gd_scene load_steps=31 format=3 uid="uid://vtu0y4hh6svo"]
 
 [ext_resource type="Texture2D" uid="uid://d3dtbb2edef5g" path="res://Assets/Art/Fox Sprite Sheet.png" id="1_1ytof"]
 [ext_resource type="Script" uid="uid://k35u5mg3867m" path="res://Assets/ClickThrough.cs" id="1_38657"]
 [ext_resource type="Script" uid="uid://d0n10b5143spj" path="res://FoxPet.cs" id="3_idrk7"]
+[ext_resource type="PackedScene" uid="uid://crex03hmmfwe2" path="res://UI.tscn" id="4_jyo8g"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_38657"]
 atlas = ExtResource("1_1ytof")
@@ -23,6 +24,26 @@ region = Rect2(96, 0, 32, 32)
 [sub_resource type="AtlasTexture" id="AtlasTexture_ih4o6"]
 atlas = ExtResource("1_1ytof")
 region = Rect2(128, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_x7f7j"]
+atlas = ExtResource("1_1ytof")
+region = Rect2(0, 128, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5751x"]
+atlas = ExtResource("1_1ytof")
+region = Rect2(32, 128, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_peyof"]
+atlas = ExtResource("1_1ytof")
+region = Rect2(64, 128, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xilws"]
+atlas = ExtResource("1_1ytof")
+region = Rect2(96, 128, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8xt7s"]
+atlas = ExtResource("1_1ytof")
+region = Rect2(128, 128, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_acrg4"]
 atlas = ExtResource("1_1ytof")
@@ -104,6 +125,26 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
+"texture": SubResource("AtlasTexture_x7f7j")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5751x")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_peyof")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xilws")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8xt7s")
+}],
+"loop": true,
+"name": &"Mad",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": SubResource("AtlasTexture_acrg4")
 }, {
 "duration": 1.0,
@@ -155,16 +196,38 @@ animations = [{
 "speed": 5.0
 }]
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_idrk7"]
+size = Vector2(20, 15.6666)
+
 [node name="Base" type="Node2D"]
 script = ExtResource("1_38657")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." node_paths=PackedStringArray("clickThrough", "UiNode")]
 position = Vector2(673, 335)
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_omkn7")
-animation = &"Idle"
+animation = &"Mad"
 autoplay = "Idle"
 script = ExtResource("3_idrk7")
 Speed = 50.0
 TopOffset = -46.0
-BottomOffset = -29.13
+BottomOffset = 18.005
+clickThrough = NodePath("..")
+UiNode = NodePath("../Control")
+
+[node name="ClickLogic" type="Area2D" parent="AnimatedSprite2D"]
+disable_mode = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/ClickLogic"]
+position = Vector2(0.333328, 8.49998)
+shape = SubResource("RectangleShape2D_idrk7")
+
+[node name="Control" parent="." instance=ExtResource("4_jyo8g")]
+offset_left = -788.0
+offset_top = -439.0
+offset_right = -788.0
+offset_bottom = -439.0
+size_flags_horizontal = 4
+size_flags_vertical = 8
+
+[connection signal="input_event" from="AnimatedSprite2D/ClickLogic" to="AnimatedSprite2D" method="_on_click_logic_input_event"]

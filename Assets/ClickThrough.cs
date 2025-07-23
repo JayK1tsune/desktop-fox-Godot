@@ -21,12 +21,12 @@ public partial class ClickThrough : Node
 
 	// index reference of the window
 	private IntPtr _hWnd;
-
+	private bool _currentlyClickThrough = true;
 	public override void _Ready()
 	{
 		// Get the reference of the game window
 		_hWnd = GetActiveWindow();
-
+		SetClickThrough(true);
 		// setting the flags of becoming a layered and transparent window
 		SetWindowLong(_hWnd, GwlExStyle, WsExLayered | WsExTransparent);
 	}
@@ -35,6 +35,10 @@ public partial class ClickThrough : Node
 	// pixel under cursor to have alpha < 0.5f but you do you)
 	public void SetClickThrough(bool clickthrough)
 	{
+		if (_currentlyClickThrough == clickthrough)
+			return;
+
+		GD.Print("Function was called");
 		if (clickthrough)
 		{
 			SetWindowLong(_hWnd, GwlExStyle, WsExLayered | WsExTransparent);
@@ -43,6 +47,8 @@ public partial class ClickThrough : Node
 		{
 			SetWindowLong(_hWnd, GwlExStyle, WsExLayered);
 		}
+		
+		_currentlyClickThrough = clickthrough;
 	}
 
 
@@ -52,5 +58,10 @@ public partial class ClickThrough : Node
 		IntPtr activeWindow = GetActiveWindow();
 		return activeWindow == GetActiveWindow();
 	}
+
+	
+
+
+
 	
 }
