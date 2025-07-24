@@ -1,8 +1,7 @@
-[gd_scene load_steps=31 format=3 uid="uid://vtu0y4hh6svo"]
+[gd_scene load_steps=30 format=3 uid="uid://vtu0y4hh6svo"]
 
 [ext_resource type="Texture2D" uid="uid://d3dtbb2edef5g" path="res://Assets/Art/Fox Sprite Sheet.png" id="1_1ytof"]
 [ext_resource type="Script" uid="uid://k35u5mg3867m" path="res://Assets/ClickThrough.cs" id="1_38657"]
-[ext_resource type="Script" uid="uid://d0n10b5143spj" path="res://FoxPet.cs" id="3_idrk7"]
 [ext_resource type="PackedScene" uid="uid://crex03hmmfwe2" path="res://UI.tscn" id="4_jyo8g"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_38657"]
@@ -202,18 +201,12 @@ size = Vector2(20, 15.6666)
 [node name="Base" type="Node2D"]
 script = ExtResource("1_38657")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." node_paths=PackedStringArray("clickThrough", "UiNode")]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(673, 335)
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_omkn7")
 animation = &"Mad"
 autoplay = "Idle"
-script = ExtResource("3_idrk7")
-Speed = 50.0
-TopOffset = -46.0
-BottomOffset = 18.005
-clickThrough = NodePath("..")
-UiNode = NodePath("../Control")
 
 [node name="ClickLogic" type="Area2D" parent="AnimatedSprite2D"]
 disable_mode = 2
@@ -229,5 +222,6 @@ offset_right = -788.0
 offset_bottom = -439.0
 size_flags_horizontal = 4
 size_flags_vertical = 8
+script = null
 
 [connection signal="input_event" from="AnimatedSprite2D/ClickLogic" to="AnimatedSprite2D" method="_on_click_logic_input_event"]
