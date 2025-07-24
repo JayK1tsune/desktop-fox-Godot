@@ -2,9 +2,12 @@ using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Godot;
+using System.Security.Cryptography.X509Certificates;
 
 public partial class WindowClick : Node
-{ // Autoloaded
+{
+
+    public static WindowClick Instance;
 
     // SetWindowLong() modifies a specific flag value associated with a window.
     // We pass the window handle, the index of the property, and the flags the property will have
@@ -24,6 +27,7 @@ public partial class WindowClick : Node
 
     public override void _Ready()
     {
+        Instance = this;
         // We store the window handle
         _hWnd = (IntPtr)DisplayServer.WindowGetNativeHandle(DisplayServer.HandleType.WindowHandle, GetWindow().GetWindowId());
 

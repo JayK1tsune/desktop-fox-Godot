@@ -17,7 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-WindowClick="*res://WindowClick.cs"
+ClickThrough="*res://Assets/ClickThrough.cs"
 
 [display]
 

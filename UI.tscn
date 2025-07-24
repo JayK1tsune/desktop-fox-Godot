@@ -1,22 +1,104 @@
-[gd_scene load_steps=2 format=3 uid="uid://crex03hmmfwe2"]
+[gd_scene load_steps=12 format=3 uid="uid://crex03hmmfwe2"]
 
-[ext_resource type="Script" uid="uid://c3ddwldbe0eod" path="res://UILogic.cs" id="1_b3bc3"]
+[ext_resource type="Script" uid="uid://d6jyqr3oaqtx" path="res://Ui.cs" id="1_b3bc3"]
+[ext_resource type="Script" uid="uid://dfvylm8bx1fu6" path="res://ColourButton.cs" id="2_3b2b5"]
+[ext_resource type="Script" uid="uid://dewd6tgx105nq" path="res://AnimatedTextureRect.cs" id="3_qui0h"]
+[ext_resource type="Texture2D" uid="uid://nokhon7jy8tn" path="res://Assets/Art/spritesheet11-sheet.png" id="4_vrfts"]
 
-[node name="Control" type="Control"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_0mc3e"]
+atlas = ExtResource("4_vrfts")
+region = Rect2(0, 0, 59, 58)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2n5f6"]
+atlas = ExtResource("4_vrfts")
+region = Rect2(59, 0, 59, 58)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_27c8x"]
+atlas = ExtResource("4_vrfts")
+region = Rect2(118, 0, 59, 58)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_i1vam"]
+atlas = ExtResource("4_vrfts")
+region = Rect2(177, 0, 59, 58)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q77pa"]
+atlas = ExtResource("4_vrfts")
+region = Rect2(236, 0, 59, 58)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_n8582"]
+atlas = ExtResource("4_vrfts")
+region = Rect2(295, 0, 59, 58)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_c6dx3"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0mc3e")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2n5f6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_27c8x")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_i1vam")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q77pa")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_n8582")
+}],
+"loop": false,
+"name": &"Open",
+"speed": 5.0
+}]
+
+[node name="Ui_Root" type="Control" node_paths=PackedStringArray("spawnMoreButton", "colorPickerButton")]
 layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_b3bc3")
+spawnMoreButton = NodePath("UIControl/Button")
+colorPickerButton = NodePath("UIControl/ColorPickerButton")
+
+[node name="UIControl" type="Control" parent="." groups=["UI"]]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -9.0
+offset_top = 2.0
+offset_right = -9.0
+offset_bottom = 2.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_b3bc3")
 
-[node name="Button" type="Button" parent="."]
+[node name="Button" type="Button" parent="UIControl" groups=["UI"]]
+offset_right = 122.0
+offset_bottom = 38.0
+text = "Press me
+"
+
+[node name="ColorPickerButton" type="ColorPickerButton" parent="UIControl"]
 layout_mode = 0
-offset_left = 1043.0
-offset_top = 608.0
-offset_right = 1121.0
-offset_bottom = 627.0
-text = "Spawn More"
+offset_left = 3.0
+offset_top = 50.0
+offset_right = 125.0
+offset_bottom = 81.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+text = "Change Colour"
+script = ExtResource("2_3b2b5")
 
-[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
+[node name="TextureRect" type="TextureRect" parent="UIControl"]
+layout_mode = 0
+offset_left = 398.0
+offset_top = 175.0
+offset_right = 910.0
+offset_bottom = 687.0
+script = ExtResource("3_qui0h")
+spriteFrames = SubResource("SpriteFrames_c6dx3")
+animationName = "Open"
+
+[connection signal="picker_created" from="UIControl/ColorPickerButton" to="." method="_on_color_picker_button_picker_created"]

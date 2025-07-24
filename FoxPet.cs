@@ -3,19 +3,26 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Godot;
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 
 public partial class FoxPet : AnimatedSprite2D
 {
     // ────── Configurable ──────
     [Export] public float Speed = 30f;
     [Export] public float TopOffset = 50f;
-    [Export] public float BottomOffset = 50f;
-    [Export] ClickThrough clickThrough;
-    [Export] private Control UiNode;
+    [Export] public float BottomOffset = 15f;
+    [Export] private float sideOffset = 0f;
+    [Export] float _fallVelocity = 0f;
+    [Export] float _gravity = 2000f;
+    [Export] float _maxFallSpeed = 1500f;
+
+    [Export] private ClickThrough clickThrough;
 
     // ────── Internal ──────
-    private enum FoxState { Moving, Idle, Sleeping, Mad }
+    private enum FoxState { Moving, Idle, Sleeping, Mad, BeingDragged }
     private FoxState _state = FoxState.Moving;
+
+    private bool _isFalling;
 
     private float _stateTimer = 0f;
     private float _idleDuration = 0f;
@@ -28,16 +35,32 @@ public partial class FoxPet : AnimatedSprite2D
     private Random _rng = new Random();
     private RECT _workArea;
     private bool _isDragging = false;
+    private bool _isClickCandidate = false;
+    private Vector2 _clickStartPosition;
+    private const float DragThreshold = 4f;
     private Vector2 _dragOffset;
-    private Vector2 _uiSize;
-    
+    private bool _uiActive = false;
+
+    private float _clickTimer = 0f;
+    private bool _waitingForClickRelease = false;
+
+    // Ui interaction
+    [Export] private Control _ui;
+    [Export] private Ui UiScript;
+
+
+
+
+
+
 
     public override void _Ready()
     {
-        // Cache sprite size once
+        UiScript.UiActive += _on_keep_clickthrough;
+        // Connect the signal to keep UI click active
         var tex = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame());
         _spriteSize = tex.GetSize();
-        _uiSize = UiNode.Size;
+        GD.PrintErr(_spriteSize);
         clickThrough.SetClickThrough(false);
         _targetX = GetNewTargetX();
         Play("Idle");
@@ -45,16 +68,13 @@ public partial class FoxPet : AnimatedSprite2D
         var body = GetNode<Area2D>("ClickLogic");
         body.InputPickable = true;
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
-        UiNode.Connect("SpawnMorePressed", new Callable(this, nameof(OnButtonPress)));
+
     }
 
     public override void _Process(double delta)
     {
         IntPtr currentForeground = GetForegroundWindow();
         IntPtr foxWindow = GetFoxWindowHandle();
-
-        bool hoveringUI = IsMouseOverUI(UiNode);
-        clickThrough.SetClickThrough(!hoveringUI);
 
         if (currentForeground != IntPtr.Zero && currentForeground != foxWindow)
         {
@@ -66,21 +86,33 @@ public partial class FoxPet : AnimatedSprite2D
 
         _mousePosition = GetViewport().GetMousePosition();
 
-        if (_isDragging)
-        {
-            GD.Print("Dragging.");
-        }
+
+
 
         // Check if mouse is over opaque pixel of the fox sprite
-        bool hoveringOpaque = IsMouseOverOpaquePixel(
-            SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame()), 
-            _mousePosition, 
-            Position, 
-            _spriteSize, 
+        bool hoveringSprite = IsMouseOverOpaquePixelOnly(
+            SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame()),
+            _mousePosition,
+            Position,
+            _spriteSize,
             0.5f);
+
+        bool hoveringUI = IsMouseOverUI(_ui);
+        bool hoveringOpaque = hoveringSprite || hoveringUI;
 
         // Toggle click-through purely on pixel opacity under mouse
         clickThrough.SetClickThrough(!hoveringOpaque);
+
+        if (_waitingForClickRelease)
+            _clickTimer += (float)delta;
+        if (_isDragging)
+        {
+            Vector2 mousePos = GetGlobalMousePosition();
+            GlobalPosition = mousePos - _dragOffset;
+            GD.Print("Dragging.");
+            _state = FoxState.BeingDragged;
+        }
+
     }
 
     private void HandleFoxBehavior(float delta)
@@ -108,6 +140,10 @@ public partial class FoxPet : AnimatedSprite2D
                 if (_stateTimer >= _madDuration)
                     TransitionTo(randomSleep: false);
                 break;
+            case FoxState.BeingDragged:
+                UpdateFoxLocation(delta);
+                BeginDrag();
+                break;
         }
     }
 
@@ -116,18 +152,15 @@ public partial class FoxPet : AnimatedSprite2D
         Vector2 pos = Position;
         float direction = _targetX > pos.X ? 1f : -1f;
         pos.X += direction * Speed * delta;
-
         pos.X = Mathf.Clamp(pos.X, _workArea.Left, _workArea.Right - _spriteSize.X);
-        //Removed the top of window logic for now
-        // pos.Y = _workArea.Top + TopOffset; 
-        //below will snap it to the bottom
-        pos.Y = _workArea.Bottom - _spriteSize.Y - BottomOffset;
-        Position = pos;
+
+        Position = new Vector2(pos.X, Position.Y);
         FlipH = direction < 0;
         Play("Running");
-
-        if (Mathf.Abs(_targetX - pos.X) < 5f)
+        UpdateFoxLocation(delta);
+        if (!_isFalling && Mathf.Abs(_targetX - pos.X) < 5f)
             BeginIdle();
+
     }
 
     private void BeginIdle()
@@ -136,6 +169,12 @@ public partial class FoxPet : AnimatedSprite2D
         _stateTimer = 0f;
         _state = FoxState.Idle;
         Play("Idle");
+    }
+
+    private void BeginDrag()
+    {
+        Play("GettingDragged");
+
     }
 
     private void TransitionTo(bool randomSleep)
@@ -161,6 +200,36 @@ public partial class FoxPet : AnimatedSprite2D
         float randomX = (float)_rng.NextDouble() * (right - left) + left;
         return Mathf.Clamp(randomX, left, right);
     }
+
+    private void UpdateFoxLocation(float delta)
+    {
+        Vector2 pos = Position;
+        float groundY = _workArea.Bottom - _spriteSize.Y - BottomOffset;
+
+        // Check if fox is off the taskbar
+        if (Position.Y < groundY - 5f || _isFalling)
+        {
+            _isFalling = true;
+            _fallVelocity = Mathf.Min(_fallVelocity + _gravity * delta, _maxFallSpeed);
+            pos.Y += _fallVelocity * delta;
+            _state = FoxState.BeingDragged;
+
+            if (pos.Y >= groundY)
+            {
+                pos.Y = groundY;
+                _fallVelocity = 0f;
+                _isFalling = false;
+                BeginIdle();
+            }
+        }
+        else
+        {
+            pos.Y = groundY;
+        }
+
+        Position = new Vector2(Position.X, pos.Y);
+    }
+
 
     private void UpdateWorkArea()
     {
@@ -203,64 +272,127 @@ public partial class FoxPet : AnimatedSprite2D
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
-    private const  float CLICK_THRESHHOLD = 32.0f;
+
     private void OnInputEvent(Node viewport, InputEvent @event, int shapeIdx)
     {
-
-
-        if (@event is InputEventMouseButton mouseEvent)
+        if (@event is InputEventMouseButton mouseEvent && mouseEvent.ButtonIndex == MouseButton.Left)
         {
-            if (mouseEvent.Pressed && (mouseEvent.GlobalPosition - Position).Length() < CLICK_THRESHHOLD)
+            if (mouseEvent.Pressed)
             {
-                _isDragging = true;
+                _clickStartPosition = mouseEvent.GlobalPosition;
+                _isClickCandidate = true;
             }
-            else if (_isDragging && mouseEvent.IsReleased())
+            else // Released
             {
-                _isDragging = false;
-            }
-            if (mouseEvent.Pressed && mouseEvent.ButtonIndex == MouseButton.Left)
+                float distance = (mouseEvent.GlobalPosition - _clickStartPosition).Length();
+
+                if (_isClickCandidate && distance < DragThreshold)
                 {
-                    GD.Print("Left mouse button clicked on the fox!");
+                    // Treat this as a click or double-click
+                    if (mouseEvent.DoubleClick)
+                    {
+                        GD.Print("Double Clicked Fox");
+                    }
+                    else
+                    {
+                        GD.Print("Single Clicked Fox");
+                    }
+
                     _state = FoxState.Mad;
                     _stateTimer = 0f;
                     Play("Mad");
-                    _isDragging = false;
 
                     if (_previousWindowHandle != IntPtr.Zero)
-                {
-                    SetForegroundWindow(_previousWindowHandle);
-                    GD.Print("Restored focus to previous window.");
+                    {
+                        SetForegroundWindow(_previousWindowHandle);
+                        GD.Print("Restored Window.");
+                    }
                 }
-                }
+
+                _isDragging = false;
+                _isClickCandidate = false;
+            }
+        }
+
+        if (@event is InputEventMouseMotion mouseMotion && _isClickCandidate)
+        {
+            float moveDistance = (mouseMotion.GlobalPosition - _clickStartPosition).Length();
+            if (moveDistance >= DragThreshold)
+            {
+                // Start dragging
+                _isDragging = true;
+                _dragOffset = mouseMotion.GlobalPosition - GlobalPosition;
+                _isClickCandidate = false;
+            }
         }
     }
 
-    private void OnButtonPress() {
-        GD.Print("Button Pressed");
-    }
 
-    bool IsMouseOverUI(Control control)
+
+
+
+    bool IsMouseOverOpaquePixelOnly(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
     {
-        Vector2 localPos = control.GetLocalMousePosition();
-        return control.GetRect().HasPoint(localPos);
-    }
-
-
-    bool IsMouseOverOpaquePixel(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
-    {
-        // Convert global mouse position to local coordinates relative to the sprite center
+        if (_uiActive)  // Check if click-through is enabled
+        {
+            return false; // Ignore if click-through is enabled
+        }
         Vector2 localPos = ToLocal(mousePos);
 
-        // Offset localPos to sprite texture space (top-left origin)
-        int x = Mathf.Clamp((int)(localPos.X + spriteSize.X / 2f), 0, (int)spriteSize.X - 1);
-        int y = Mathf.Clamp((int)(localPos.Y + spriteSize.Y / 2f), 0, (int)spriteSize.Y - 1);
+        int x = Mathf.Clamp((int)(localPos.X + spriteSize.X / 2), 0, (int)spriteSize.X - 1);
+        int y = Mathf.Clamp((int)(localPos.Y + spriteSize.Y / 2), 0, (int)spriteSize.Y - 1);
 
         Image image = texture.GetImage();
 
-        if (image == null)
+        if (image != null)
+        {
+            Color pixelColor = image.GetPixel(x, y);
+            return pixelColor.A >= alphaThreshold;
+        }
+
+        return false;
+    }
+
+    bool IsMouseOverUI(Control root)
+    {
+        if (root == null || !root.Visible)
             return false;
 
-        Color pixelColor = image.GetPixel(x, y);
-        return pixelColor.A >= alphaThreshold;
+        Vector2 mousePos = GetViewport().GetMousePosition();
+        return IsMouseOverAnyControlRecursive(root, mousePos);
     }
+
+    bool IsMouseOverAnyControlRecursive(Control node, Vector2 mousePos)
+    {
+        if (node.Visible
+            && node.MouseFilter != Control.MouseFilterEnum.Ignore
+            && node.GetGlobalRect().HasPoint(mousePos))
+        {
+            GD.Print("Mouse is over UI element: " + node.Name);
+            return true;
+        }
+
+        foreach (Node child in node.GetChildren())
+        {
+            if (child is Control control)
+            {
+                if (IsMouseOverAnyControlRecursive(control, mousePos))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void _on_keep_clickthrough()
+    {
+        _uiActive = true;
+        clickThrough.SetClickThrough(false);
+        GD.Print("Click-through state set to: false");
+    }
+
+
+
+
+
 }
