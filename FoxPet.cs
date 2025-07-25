@@ -39,7 +39,7 @@ public partial class FoxPet : AnimatedSprite2D
     private Vector2 _clickStartPosition;
     private const float DragThreshold = 4f;
     private Vector2 _dragOffset;
-    private bool _uiActive = false;
+    public bool _uiActive = false;
 
     private float _clickTimer = 0f;
     private bool _waitingForClickRelease = false;
@@ -56,7 +56,6 @@ public partial class FoxPet : AnimatedSprite2D
 
     public override void _Ready()
     {
-        UiScript.UiActive += _on_keep_clickthrough;
         // Connect the signal to keep UI click active
         var tex = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame());
         _spriteSize = tex.GetSize();
@@ -73,6 +72,7 @@ public partial class FoxPet : AnimatedSprite2D
 
     public override void _Process(double delta)
     {
+        GD.Print(_uiActive);
         IntPtr currentForeground = GetForegroundWindow();
         IntPtr foxWindow = GetFoxWindowHandle();
 
@@ -382,13 +382,6 @@ public partial class FoxPet : AnimatedSprite2D
         }
 
         return false;
-    }
-
-    private void _on_keep_clickthrough()
-    {
-        _uiActive = true;
-        clickThrough.SetClickThrough(false);
-        GD.Print("Click-through state set to: false");
     }
 
 

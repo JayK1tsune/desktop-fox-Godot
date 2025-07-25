@@ -34,7 +34,7 @@ texture = SubResource("Texture2DRD_g6l6n")
 script = ExtResource("3_qui0h")
 animationName = "Open"
 
-[node name="ColorPickerButton" type="ColorPickerButton" parent="UIControl"]
+[node name="ColorPickerButton" type="ColorPickerButton" parent="UIControl" groups=["UI"]]
 layout_mode = 0
 offset_left = 46.0
 offset_top = 11.0

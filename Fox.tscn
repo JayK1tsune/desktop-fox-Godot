@@ -317,7 +317,7 @@ _fallVelocity = 0.1
 _gravity = 1000.0
 _maxFallSpeed = 300.0
 clickThrough = NodePath("../ClickThroughScript")
-_ui = NodePath("../Ui_Root/UIControl")
+_ui = NodePath("../Ui_Root")
 UiScript = NodePath("../Ui_Root")
 
 [node name="ClickLogic" type="Area2D" parent="Fox"]
@@ -328,6 +328,8 @@ position = Vector2(0.333328, 8.49998)
 shape = SubResource("RectangleShape2D_idrk7")
 
 [node name="Ui_Root" parent="." node_paths=PackedStringArray("clickThrough") instance=ExtResource("4_jyo8g")]
+offset_top = 2.0
+offset_bottom = 2.0
 clickThrough = NodePath("../ClickThroughScript")
 metadata/_edit_use_anchors_ = true
 
