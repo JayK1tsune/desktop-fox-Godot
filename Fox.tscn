@@ -329,15 +329,7 @@ shape = SubResource("RectangleShape2D_idrk7")
 
 [node name="Ui_Root" parent="." node_paths=PackedStringArray("clickThrough") instance=ExtResource("4_jyo8g")]
 clickThrough = NodePath("../ClickThroughScript")
-
-[node name="Button" parent="Ui_Root/UIControl" index="0"]
-layout_mode = 0
-
-[node name="TextureRect" parent="Ui_Root/UIControl" index="2"]
-offset_right = 540.0
-offset_bottom = 338.0
+metadata/_edit_use_anchors_ = true
 
 [node name="ClickThroughScript" type="Node" parent="."]
 script = ExtResource("4_56hma")
-
-[editable path="Ui_Root"]
