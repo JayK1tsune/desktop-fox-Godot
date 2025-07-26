@@ -1,9 +1,10 @@
-[gd_scene load_steps=45 format=3 uid="uid://vtu0y4hh6svo"]
+[gd_scene load_steps=46 format=3 uid="uid://vtu0y4hh6svo"]
 
 [ext_resource type="Texture2D" uid="uid://d3dtbb2edef5g" path="res://Assets/Art/Fox Sprite Sheet.png" id="1_1ytof"]
 [ext_resource type="Script" uid="uid://d0n10b5143spj" path="res://FoxPet.cs" id="2_idrk7"]
 [ext_resource type="Script" uid="uid://k35u5mg3867m" path="res://Assets/ClickThrough.cs" id="4_56hma"]
 [ext_resource type="PackedScene" uid="uid://crex03hmmfwe2" path="res://UI.tscn" id="4_jyo8g"]
+[ext_resource type="PackedScene" uid="uid://tg4qwwig341h" path="res://slime.tscn" id="5_56hma"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_fsby1"]
 atlas = ExtResource("1_1ytof")
@@ -335,3 +336,6 @@ metadata/_edit_use_anchors_ = true
 
 [node name="ClickThroughScript" type="Node" parent="."]
 script = ExtResource("4_56hma")
+
+[node name="Slime" parent="." instance=ExtResource("5_56hma")]
+position = Vector2(472, 579)

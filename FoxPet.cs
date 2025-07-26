@@ -33,7 +33,7 @@ public partial class FoxPet : AnimatedSprite2D
     private AnimatedSprite2D _sprite;
     private float _targetX;
     private Random _rng = new Random();
-    private RECT _workArea;
+    public RECT _workArea;
     private bool _isDragging = false;
     private bool _isClickCandidate = false;
     private Vector2 _clickStartPosition;
@@ -231,7 +231,7 @@ public partial class FoxPet : AnimatedSprite2D
     }
 
 
-    private void UpdateWorkArea()
+    public void UpdateWorkArea()
     {
         // Only update work area to the foreground window if dragging
         if (_isDragging)

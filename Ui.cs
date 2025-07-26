@@ -17,7 +17,7 @@ public partial class Ui : Control
 	{
 		FoxPetScript = GetNode<FoxPet>("/root/Base/Fox");
 		clickThrough.SetClickThrough(false);
-		colorPickerButton.KeepClickThrough += keepUiClickActive;   // Connect button signals
+		colorPickerButton.KeepClickThrough += KeepUiActive;   // Connect button signals
 		button.CloseUi += DisableUi; // Connect button signals
 		colorPickerButton.StopClickThrough += DisabledUi; // Connect button signals
 
@@ -28,11 +28,7 @@ public partial class Ui : Control
 
 
 
-	public void keepUiClickActive()
-	{
-		KeepUiActive();
-		GD.Print("Click-through state set to: false");
-	}
+
 
 	public void KeepUiActive()
 	{
