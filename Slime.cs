@@ -1,5 +1,8 @@
 using Godot;
 using System;
+using Godot.Collections;
+
+using System.Runtime.Versioning;
 
 public partial class Slime : AnimatedSprite2D
 {
@@ -7,10 +10,16 @@ public partial class Slime : AnimatedSprite2D
     private Vector2 _slimeSprite;
     private ClickThrough _clickThrough;
 
+    enum SpriteAnimations{idle, BlowUp, Moving, Jumping}
+    private SpriteAnimations _currentAnimation;
+
     [Export]
     private float _offsetY;
     [Export]
     private float _offsetX;
+    [Export]
+    private int _speed;
+
 
     public override void _Ready()
     {
@@ -41,9 +50,28 @@ public partial class Slime : AnimatedSprite2D
         {
             _clickThrough.SetClickThrough(false);
         }
+        SlimeMovement((float)delta);
 
 
     }
+
+    private void SlimeMovement(float delta)
+    {
+        Vector2 pos = Position;
+        // kist move the slime left and right within the work area
+        pos.X += _speed * (float)delta;
+        GD.Print("Slime Position: " + pos);
+        if (pos.X > _foxPetScript._workArea.Right - _slimeSprite.X / 2 || pos.X < _foxPetScript._workArea.Left + _slimeSprite.X / 2)
+        {
+            _speed = -_speed;
+            //flip the sprite
+            FlipH = !FlipH;
+        }
+        Position = new Vector2(pos.X, pos.Y);
+        _currentAnimation = SpriteAnimations.Moving;
+        HandleSlimeAnimations();
+    }
+    
 
     private void UpdateSlimeLocation()
     {
@@ -54,12 +82,34 @@ public partial class Slime : AnimatedSprite2D
         Position = new Vector2(pos.X, pos.Y);
     }
 
+
+
+    private void HandleSlimeAnimations()
+    {
+        switch (_currentAnimation)
+        {
+            case SpriteAnimations.idle:
+                Play("idle");
+                break;
+            case SpriteAnimations.BlowUp:
+                Play("BlowUp");
+                break;
+            case SpriteAnimations.Moving:
+                Play("Moving");
+                break;
+            case SpriteAnimations.Jumping:
+                Play("Jumping");
+                break;
+        }
+    }
+
     private void OnInputEvent(Node viewport, InputEvent @event, int shapeIdx)
     {
         if (@event is InputEventMouseButton mouseEvent && mouseEvent.ButtonIndex == MouseButton.Left && mouseEvent.Pressed)
         {
             GD.Print("Slime clicked!");
-            Play("BlowUp");
+            _currentAnimation = SpriteAnimations.BlowUp;
+            HandleSlimeAnimations();
             //destroy the slime after the animation is done
             GetTree().CreateTimer(1.0f).Connect("timeout", new Callable(this, nameof(OnSlimeAnimationEnd)));
         }
