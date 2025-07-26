@@ -56,7 +56,7 @@ public partial class FoxPet : AnimatedSprite2D
 
     public override void _Ready()
     {
-        // Connect the signal to keep UI click active
+        UpdateWorkArea();
         var tex = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame());
         _spriteSize = tex.GetSize();
         GD.PrintErr(_spriteSize);
@@ -331,7 +331,7 @@ public partial class FoxPet : AnimatedSprite2D
 
 
 
-    bool IsMouseOverOpaquePixelOnly(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
+    public bool IsMouseOverOpaquePixelOnly(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
     {
         if (_uiActive)  // Check if click-through is enabled
         {

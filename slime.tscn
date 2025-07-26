@@ -1,7 +1,28 @@
-[gd_scene load_steps=9 format=3 uid="uid://tg4qwwig341h"]
+[gd_scene load_steps=15 format=3 uid="uid://tg4qwwig341h"]
 
 [ext_resource type="Texture2D" uid="uid://b7g2yx33cwb2n" path="res://Assets/slime.png" id="1_2d52u"]
+[ext_resource type="Script" uid="uid://ciyy5hmhjltdy" path="res://SlimeManager.cs" id="1_4l1t8"]
 [ext_resource type="Script" uid="uid://c2ft277m5sije" path="res://Slime.cs" id="1_5jc4t"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2002g"]
+atlas = ExtResource("1_2d52u")
+region = Rect2(0, 384, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bratd"]
+atlas = ExtResource("1_2d52u")
+region = Rect2(32, 384, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5b0gg"]
+atlas = ExtResource("1_2d52u")
+region = Rect2(64, 384, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_da4t2"]
+atlas = ExtResource("1_2d52u")
+region = Rect2(96, 384, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jrxk1"]
+atlas = ExtResource("1_2d52u")
+region = Rect2(128, 384, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_5jc4t"]
 atlas = ExtResource("1_2d52u")
@@ -23,6 +44,26 @@ region = Rect2(96, 0, 32, 32)
 animations = [{
 "frames": [{
 "duration": 1.0,
+"texture": SubResource("AtlasTexture_2002g")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bratd")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5b0gg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_da4t2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jrxk1")
+}],
+"loop": false,
+"name": &"BlowUp",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": SubResource("AtlasTexture_5jc4t")
 }, {
 "duration": 1.0,
@@ -42,15 +83,19 @@ animations = [{
 [sub_resource type="CircleShape2D" id="CircleShape2D_bratd"]
 
 [node name="Slime" type="Node2D"]
+script = ExtResource("1_4l1t8")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-scale = Vector2(2, 2)
+scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_2002g")
-animation = &"idle"
+animation = &"BlowUp"
 autoplay = "idle"
+offset = Vector2(0, 2.95)
 script = ExtResource("1_5jc4t")
+_offsetX = 300.0
 
-[node name="Area2D" type="Area2D" parent="AnimatedSprite2D"]
+[node name="ClickLogic" type="Area2D" parent="AnimatedSprite2D"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/Area2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/ClickLogic"]
+position = Vector2(0, 3.33333)
 shape = SubResource("CircleShape2D_bratd")

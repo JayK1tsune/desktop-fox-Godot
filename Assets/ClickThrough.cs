@@ -38,7 +38,7 @@ public partial class ClickThrough : Node
 		if (_currentlyClickThrough == clickthrough)
 			return;
 
-		GD.Print("Function was called");
+		//GD.Print("Function was called");
 		if (clickthrough)
 		{
 			SetWindowLong(_hWnd, GwlExStyle, WsExLayered | WsExTransparent);

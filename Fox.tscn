@@ -306,7 +306,7 @@ size = Vector2(20, 15.6666)
 [node name="Base" type="Node2D"]
 
 [node name="Fox" type="AnimatedSprite2D" parent="." node_paths=PackedStringArray("clickThrough", "_ui", "UiScript")]
-position = Vector2(673, 335)
+position = Vector2(669, 193)
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_omkn7")
 animation = &"GettingDragged"
@@ -329,13 +329,15 @@ position = Vector2(0.333328, 8.49998)
 shape = SubResource("RectangleShape2D_idrk7")
 
 [node name="Ui_Root" parent="." node_paths=PackedStringArray("clickThrough") instance=ExtResource("4_jyo8g")]
-offset_top = 2.0
-offset_bottom = 2.0
+offset_left = -4.0
+offset_top = 22.0
+offset_right = -4.0
+offset_bottom = 22.0
 clickThrough = NodePath("../ClickThroughScript")
 metadata/_edit_use_anchors_ = true
 
 [node name="ClickThroughScript" type="Node" parent="."]
 script = ExtResource("4_56hma")
 
-[node name="Slime" parent="." instance=ExtResource("5_56hma")]
-position = Vector2(472, 579)
+[node name="Slime" parent="." node_paths=PackedStringArray("clickThrough") instance=ExtResource("5_56hma")]
+clickThrough = NodePath("../ClickThroughScript")

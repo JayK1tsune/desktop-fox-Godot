@@ -25,6 +25,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="TextureRect" type="TextureRect" parent="UIControl"]
+visible = false
 layout_mode = 0
 offset_left = 649.0
 offset_top = 214.0
