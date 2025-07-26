@@ -5,9 +5,10 @@ public partial class SlimeManager : Node2D
 {
     [Export]
     ClickThrough clickThrough;
-
-    // get set for children 
-
+    [Export]
+    FoxDetection foxDetection;
+    [Signal]
+    public delegate void SlimeInRangeEventHandler();
     public ClickThrough ClickThrough
     {
         get => clickThrough;
@@ -21,7 +22,14 @@ public partial class SlimeManager : Node2D
         {
             clickThrough = GetNode<ClickThrough>("/root/Base/ClickThrough");
         }
-        
-        // Additional initialization code can go here
+        foxDetection.FoxDetected += OnFoxDetected;
     }
+
+
+    public void OnFoxDetected()
+    {
+        GD.Print("Fox detected by SlimeManager");
+        EmitSignal(nameof(SlimeInRange));
+    }
+
 }

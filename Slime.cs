@@ -32,7 +32,7 @@ public partial class Slime : AnimatedSprite2D
         var body = GetNode<Area2D>("ClickLogic");
         body.InputPickable = true;
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
-
+        _currentAnimation = SpriteAnimations.Moving;
         // Additional initialization code can go here
     }
 
@@ -50,7 +50,11 @@ public partial class Slime : AnimatedSprite2D
         {
             _clickThrough.SetClickThrough(false);
         }
-        SlimeMovement((float)delta);
+        if (_currentAnimation == SpriteAnimations.Moving)
+        {
+            SlimeMovement((float)delta);
+        }
+        
 
 
     }
@@ -60,7 +64,6 @@ public partial class Slime : AnimatedSprite2D
         Vector2 pos = Position;
         // kist move the slime left and right within the work area
         pos.X += _speed * (float)delta;
-        GD.Print("Slime Position: " + pos);
         if (pos.X > _foxPetScript._workArea.Right - _slimeSprite.X / 2 || pos.X < _foxPetScript._workArea.Left + _slimeSprite.X / 2)
         {
             _speed = -_speed;

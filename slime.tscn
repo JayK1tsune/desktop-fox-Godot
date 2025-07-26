@@ -1,8 +1,9 @@
-[gd_scene load_steps=22 format=3 uid="uid://tg4qwwig341h"]
+[gd_scene load_steps=23 format=3 uid="uid://tg4qwwig341h"]
 
 [ext_resource type="Texture2D" uid="uid://b7g2yx33cwb2n" path="res://Assets/slime.png" id="1_2d52u"]
 [ext_resource type="Script" uid="uid://ciyy5hmhjltdy" path="res://SlimeManager.cs" id="1_4l1t8"]
 [ext_resource type="Script" uid="uid://c2ft277m5sije" path="res://Slime.cs" id="1_5jc4t"]
+[ext_resource type="Script" uid="uid://bu0lim5nvql31" path="res://FoxDetection.cs" id="4_ppcr1"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_2002g"]
 atlas = ExtResource("1_2d52u")
@@ -132,8 +133,9 @@ animations = [{
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4l1t8"]
 size = Vector2(223, 20)
 
-[node name="Slime" type="Node2D"]
+[node name="Slime" type="Node2D" node_paths=PackedStringArray("foxDetection")]
 script = ExtResource("1_4l1t8")
+foxDetection = NodePath("AnimatedSprite2D/FoxDetection")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 scale = Vector2(3, 3)
@@ -151,9 +153,10 @@ _speed = 235
 position = Vector2(0, 3.33333)
 shape = SubResource("CircleShape2D_bratd")
 
-[node name="Fox Detection" type="Area2D" parent="AnimatedSprite2D"]
+[node name="FoxDetection" type="Area2D" parent="AnimatedSprite2D"]
+script = ExtResource("4_ppcr1")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/Fox Detection"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/FoxDetection"]
 position = Vector2(-0.166667, 0)
 shape = SubResource("RectangleShape2D_4l1t8")
 debug_color = Color(0.890451, 0.00025259, 0.793132, 0.42)

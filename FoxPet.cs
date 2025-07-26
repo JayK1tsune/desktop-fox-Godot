@@ -47,6 +47,7 @@ public partial class FoxPet : AnimatedSprite2D
     // Ui interaction
     [Export] private Control _ui;
     [Export] private Ui UiScript;
+    [Export] SlimeManager _slimeManager;
 
 
 
@@ -67,7 +68,7 @@ public partial class FoxPet : AnimatedSprite2D
         var body = GetNode<Area2D>("ClickLogic");
         body.InputPickable = true;
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
-
+        _slimeManager.SlimeInRange += OnSlimeInRange;
     }
 
     public override void _Process(double delta)
@@ -382,6 +383,12 @@ public partial class FoxPet : AnimatedSprite2D
         }
 
         return false;
+    }
+
+    private void OnSlimeInRange()
+    {
+        GD.Print("Slime in range detected by FoxPet");
+
     }
 
 

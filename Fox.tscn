@@ -305,7 +305,7 @@ size = Vector2(20, 15.6666)
 
 [node name="Base" type="Node2D"]
 
-[node name="Fox" type="AnimatedSprite2D" parent="." node_paths=PackedStringArray("clickThrough", "_ui", "UiScript")]
+[node name="Fox" type="AnimatedSprite2D" parent="." node_paths=PackedStringArray("clickThrough", "_ui", "UiScript", "_slimeManager")]
 position = Vector2(669, 193)
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_omkn7")
@@ -320,6 +320,7 @@ _maxFallSpeed = 300.0
 clickThrough = NodePath("../ClickThroughScript")
 _ui = NodePath("../Ui_Root")
 UiScript = NodePath("../Ui_Root")
+_slimeManager = NodePath("../Slime")
 
 [node name="ClickLogic" type="Area2D" parent="Fox"]
 disable_mode = 2
