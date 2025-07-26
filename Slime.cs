@@ -69,13 +69,6 @@ public partial class Slime : AnimatedSprite2D
     {
         QueueFree();
     }
-
-    private void _on_area_2d_mouse_entered()
-    {
-        GD.Print("Mouse entered the slime area");
-        // You can add additional logic here if needed
-    }
-
     
     private bool IsMouseOverOpaquePixelOnly(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
     {
