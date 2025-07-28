@@ -23,15 +23,17 @@ public partial class Slime : AnimatedSprite2D
     SlimeManager _slimeManager;
 
 
+
+
     public override void _Ready()
     {
+        var body = GetNode<Area2D>("ClickLogic");
         //use the getter to get the click through node
         _clickThrough = GetParent<SlimeManager>().ClickThrough;
         _foxPetScript = GetNode<FoxPet>("/root/Base/Fox");
         var tex = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame());
         _slimeSprite = tex.GetSize();
         CallDeferred(nameof(UpdateSlimeLocation));
-        var body = GetNode<Area2D>("ClickLogic");
         body.InputPickable = true;
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
         _currentAnimation = SpriteAnimations.Moving;
@@ -100,7 +102,8 @@ public partial class Slime : AnimatedSprite2D
                 break;
             case SpriteAnimations.BlowUp:
                 Play("BlowUp");
-                GetTree().CreateTimer(1.0f).Connect("timeout", new Callable(this, nameof(OnSlimeAnimationEnd)));
+                var timer = GetTree().CreateTimer(0.5f);
+                timer.Connect("timeout", new Callable(this, nameof(OnSlimeAnimationEnd)));
                 break;
             case SpriteAnimations.Moving:
                 Play("Moving");
@@ -126,7 +129,6 @@ public partial class Slime : AnimatedSprite2D
         //delte if the slime is not null
         if (GetParent() != null)
         {
-            _slimeManager.SlimeAttacked -= SlimeAttacked;
             GetParent().RemoveChild(this);
             QueueFree();
         }
@@ -156,6 +158,7 @@ public partial class Slime : AnimatedSprite2D
 
     public void SlimeAttacked()
     {
-        OnSlimeAnimationEnd();
+        _currentAnimation = SpriteAnimations.BlowUp;
+        HandleSlimeAnimations();
     }
 }

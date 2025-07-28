@@ -6,7 +6,7 @@ public partial class SlimeManager : Node2D
     [Export]
     ClickThrough clickThrough;
     [Export]
-    FoxDetection foxDetection;
+    public FoxDetection foxDetection;
     [Export]
     FoxPet foxPet;
     [Export]
@@ -15,6 +15,8 @@ public partial class SlimeManager : Node2D
     public delegate void SlimeInRangeEventHandler();
     [Signal]
     public delegate void SlimeAttackedEventHandler();
+    [Export]
+    public Area2D foxDetectionArea;
     public ClickThrough ClickThrough
     {
         get => clickThrough;
@@ -24,7 +26,6 @@ public partial class SlimeManager : Node2D
 
     public override void _Ready()
     {
-        // Ensure ClickThrough is initialized
         if (clickThrough == null)
         {
             clickThrough = GetNode<ClickThrough>("/root/Base/ClickThrough");

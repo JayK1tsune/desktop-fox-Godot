@@ -48,6 +48,7 @@ public partial class FoxPet : AnimatedSprite2D
     private bool _waitingForClickRelease = false;
     private bool _slimeInRange = false;
 
+
     // Ui interaction
     [Export] private Control _ui;
     [Export] private Ui UiScript;
@@ -73,9 +74,10 @@ public partial class FoxPet : AnimatedSprite2D
         body.InputPickable = true;
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
         _slimeManager.SlimeInRange += OnSlimeInRange;
+        AnimationFinished += OnAnimationFinished;
     }
 
-    public override void _Process(double delta)
+    public override async void _Process(double delta)
     {
         GD.Print(_uiActive);
         IntPtr currentForeground = GetForegroundWindow();
@@ -87,7 +89,7 @@ public partial class FoxPet : AnimatedSprite2D
         }
 
         UpdateWorkArea();
-        HandleFoxBehavior((float)delta);
+        await HandleFoxBehavior((float)delta);
 
         _mousePosition = GetViewport().GetMousePosition();
 
@@ -120,7 +122,7 @@ public partial class FoxPet : AnimatedSprite2D
 
     }
 
-    private void HandleFoxBehavior(float delta)
+    private async Task HandleFoxBehavior(float delta)
     {
         switch (_state)
         {
@@ -150,7 +152,12 @@ public partial class FoxPet : AnimatedSprite2D
                 BeginDrag();
                 break;
             case FoxState.AttackSlime:
-                AttackSlime(delta);
+                if (_slimeManager.foxDetectionArea != null)
+                {
+                    _slimeManager.foxDetectionArea.QueueFree();
+                    _slimeManager.foxDetectionArea = null;
+                }    
+                await AttackSlime(delta);
                 break;
             default:
                 GD.PrintErr("Unknown FoxState: " + _state);
@@ -158,11 +165,11 @@ public partial class FoxPet : AnimatedSprite2D
         }
     }
 
-    private void MoveTowardTarget(float delta)
+    private async void MoveTowardTarget(float delta)
     {
         if (_slimeInRange)
         {
-            AttackSlime(delta);
+            await AttackSlime(delta);
             return;
         }
         Vector2 pos = Position;
@@ -179,14 +186,21 @@ public partial class FoxPet : AnimatedSprite2D
 
     }
 
-    private void AttackSlime(float delta)
+    private async Task AttackSlime(float delta)
     {
+        if (_slimeManager.slimePrefab == null || !IsInstanceValid(_slimeManager.slimePrefab))
+        {
+            _state = FoxState.Moving;
+               return;
+        }
+
         Vector2 pos = Position;
         float groundY = _workArea.Bottom - _spriteSize.Y - BottomOffset;
         pos.Y = groundY;
         // Check if the fox is close enough to the slime
         if (_slimeInRange)
         {
+
             GD.Print("Fox is attacking the slime!");
             Vector2 slimePosition = _slimeManager.slimePrefab.Position;
             Position = pos;
@@ -196,9 +210,15 @@ public partial class FoxPet : AnimatedSprite2D
                 FlipH = pos.X > slimePosition.X;
                 _state = FoxState.AttackSlime;
                 Play("Attack");
-                // emit signal to notify that the slime is attacked
-                GetTree().CreateTimer(1.0f);
-                EmitSignal(nameof(SlimeAttacked));
+                var tcs = new TaskCompletionSource();
+                void Handler()
+                {
+                    AnimationFinished -= Handler;
+                    tcs.SetResult();
+                }
+                AnimationFinished += Handler;
+                await tcs.Task; // Wait for the attack animation to finish
+                OnAnimationFinished();
             }
             else
             {
@@ -217,6 +237,11 @@ public partial class FoxPet : AnimatedSprite2D
         Position = new Vector2(pos.X, pos.Y);
         _slimeInRange = false; // Reset slime in range after attack
         _stateTimer = 0f; // Reset state timer after attack
+    }
+
+    private void OnAnimationFinished()
+    {
+        EmitSignal(nameof(SlimeAttacked));
     }
 
 
