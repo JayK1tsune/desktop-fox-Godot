@@ -26,7 +26,6 @@ public partial class FoxDetection : Area2D
     {
         if (_detectionArea.GetOverlappingAreas().Contains(_foxPetScript))
         {
-            GD.Print("Fox Detected!");
             EmitSignal(nameof(FoxDetected));
         }
     }

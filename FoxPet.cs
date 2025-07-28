@@ -9,6 +9,7 @@ public partial class FoxPet : AnimatedSprite2D
 {
     // ────── Configurable ──────
     [Export] public float Speed = 30f;
+    [Export] public float _huntingSpeed = 50f;
     [Export] public float TopOffset = 50f;
     [Export] public float BottomOffset = 15f;
     [Export] private float sideOffset = 0f;
@@ -19,9 +20,11 @@ public partial class FoxPet : AnimatedSprite2D
     [Export] private ClickThrough clickThrough;
 
     // ────── Internal ──────
-    private enum FoxState { Moving, Idle, Sleeping, Mad, BeingDragged }
+    private enum FoxState { Moving, Idle, Sleeping, Mad, BeingDragged, AttackSlime }
     private FoxState _state = FoxState.Moving;
 
+
+    [Signal] public delegate void SlimeAttackedEventHandler();
     private bool _isFalling;
 
     private float _stateTimer = 0f;
@@ -43,6 +46,7 @@ public partial class FoxPet : AnimatedSprite2D
 
     private float _clickTimer = 0f;
     private bool _waitingForClickRelease = false;
+    private bool _slimeInRange = false;
 
     // Ui interaction
     [Export] private Control _ui;
@@ -145,11 +149,22 @@ public partial class FoxPet : AnimatedSprite2D
                 UpdateFoxLocation(delta);
                 BeginDrag();
                 break;
+            case FoxState.AttackSlime:
+                AttackSlime(delta);
+                break;
+            default:
+                GD.PrintErr("Unknown FoxState: " + _state);
+                break;
         }
     }
 
     private void MoveTowardTarget(float delta)
     {
+        if (_slimeInRange)
+        {
+            AttackSlime(delta);
+            return;
+        }
         Vector2 pos = Position;
         float direction = _targetX > pos.X ? 1f : -1f;
         pos.X += direction * Speed * delta;
@@ -164,6 +179,48 @@ public partial class FoxPet : AnimatedSprite2D
 
     }
 
+    private void AttackSlime(float delta)
+    {
+        Vector2 pos = Position;
+        float groundY = _workArea.Bottom - _spriteSize.Y - BottomOffset;
+        pos.Y = groundY;
+        // Check if the fox is close enough to the slime
+        if (_slimeInRange)
+        {
+            GD.Print("Fox is attacking the slime!");
+            Vector2 slimePosition = _slimeManager.slimePrefab.Position;
+            Position = pos;
+            if (Mathf.Abs(slimePosition.X - pos.X) < 40f)
+            {
+                //face the correct direction
+                FlipH = pos.X > slimePosition.X;
+                _state = FoxState.AttackSlime;
+                Play("Attack");
+                // emit signal to notify that the slime is attacked
+                GetTree().CreateTimer(1.0f);
+                EmitSignal(nameof(SlimeAttacked));
+            }
+            else
+            {
+                GD.Print("Fox is moving closer to the slime to attack.");
+                pos.X = Mathf.MoveToward(pos.X, slimePosition.X, _huntingSpeed * delta);
+                Position = pos;
+                FlipH = pos.X > slimePosition.X;
+            }
+        }
+        else
+        {
+            GD.Print("Fox is not close enough to attack the slime.");
+            _state = FoxState.Moving;
+            Play("Running");
+        }
+        Position = new Vector2(pos.X, pos.Y);
+        _slimeInRange = false; // Reset slime in range after attack
+        _stateTimer = 0f; // Reset state timer after attack
+    }
+
+
+
     private void BeginIdle()
     {
         _idleDuration = (float)(_rng.NextDouble() * 3 + 2);
@@ -175,7 +232,6 @@ public partial class FoxPet : AnimatedSprite2D
     private void BeginDrag()
     {
         Play("GettingDragged");
-
     }
 
     private void TransitionTo(bool randomSleep)
@@ -329,9 +385,6 @@ public partial class FoxPet : AnimatedSprite2D
     }
 
 
-
-
-
     public bool IsMouseOverOpaquePixelOnly(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
     {
         if (_uiActive)  // Check if click-through is enabled
@@ -388,7 +441,7 @@ public partial class FoxPet : AnimatedSprite2D
     private void OnSlimeInRange()
     {
         GD.Print("Slime in range detected by FoxPet");
-
+        _slimeInRange = true;
     }
 
 

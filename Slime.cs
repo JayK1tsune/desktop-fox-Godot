@@ -10,7 +10,7 @@ public partial class Slime : AnimatedSprite2D
     private Vector2 _slimeSprite;
     private ClickThrough _clickThrough;
 
-    enum SpriteAnimations{idle, BlowUp, Moving, Jumping}
+    enum SpriteAnimations { idle, BlowUp, Moving, Jumping }
     private SpriteAnimations _currentAnimation;
 
     [Export]
@@ -19,6 +19,8 @@ public partial class Slime : AnimatedSprite2D
     private float _offsetX;
     [Export]
     private int _speed;
+    [Export]
+    SlimeManager _slimeManager;
 
 
     public override void _Ready()
@@ -34,6 +36,8 @@ public partial class Slime : AnimatedSprite2D
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
         _currentAnimation = SpriteAnimations.Moving;
         // Additional initialization code can go here
+        _slimeManager.SlimeAttacked += SlimeAttacked;
+
     }
 
     public override void _Process(double delta)
@@ -54,7 +58,7 @@ public partial class Slime : AnimatedSprite2D
         {
             SlimeMovement((float)delta);
         }
-        
+
 
 
     }
@@ -74,7 +78,7 @@ public partial class Slime : AnimatedSprite2D
         _currentAnimation = SpriteAnimations.Moving;
         HandleSlimeAnimations();
     }
-    
+
 
     private void UpdateSlimeLocation()
     {
@@ -96,6 +100,7 @@ public partial class Slime : AnimatedSprite2D
                 break;
             case SpriteAnimations.BlowUp:
                 Play("BlowUp");
+                GetTree().CreateTimer(1.0f).Connect("timeout", new Callable(this, nameof(OnSlimeAnimationEnd)));
                 break;
             case SpriteAnimations.Moving:
                 Play("Moving");
@@ -113,16 +118,20 @@ public partial class Slime : AnimatedSprite2D
             GD.Print("Slime clicked!");
             _currentAnimation = SpriteAnimations.BlowUp;
             HandleSlimeAnimations();
-            //destroy the slime after the animation is done
-            GetTree().CreateTimer(1.0f).Connect("timeout", new Callable(this, nameof(OnSlimeAnimationEnd)));
         }
     }
 
     private void OnSlimeAnimationEnd()
     {
-        QueueFree();
+        //delte if the slime is not null
+        if (GetParent() != null)
+        {
+            _slimeManager.SlimeAttacked -= SlimeAttacked;
+            GetParent().RemoveChild(this);
+            QueueFree();
+        }
     }
-    
+
     private bool IsMouseOverOpaquePixelOnly(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
     {
         if (_foxPetScript._uiActive)  // Check if click-through is enabled
@@ -145,5 +154,8 @@ public partial class Slime : AnimatedSprite2D
         return false;
     }
 
-
+    public void SlimeAttacked()
+    {
+        OnSlimeAnimationEnd();
+    }
 }
