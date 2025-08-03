@@ -334,7 +334,7 @@ public partial class FoxPet : AnimatedSprite2D
 
     // ────── Windows API ──────
     private const uint SPI_GETWORKAREA = 0x0030;
-
+    //need to check to see where i can  reduce this bloat
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
     [StructLayout(LayoutKind.Sequential)]
