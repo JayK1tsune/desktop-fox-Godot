@@ -31,5 +31,6 @@ public partial class FoxDetection : Area2D
     }
 
     //todo : Add detection for balls that the fox can play with
+    // add more things to detect
 
 }
