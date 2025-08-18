@@ -38,6 +38,7 @@ public partial class SlimeManager : Node2D
 
     public void OnFoxDetected()
     {
+        //emit slime in range
         EmitSignal(nameof(SlimeInRange));
     }
     
