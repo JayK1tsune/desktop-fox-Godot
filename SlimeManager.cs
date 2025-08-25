@@ -11,6 +11,8 @@ public partial class SlimeManager : Node2D
     FoxPet foxPet;
     [Export]
     public AnimatedSprite2D slimePrefab;
+    [Export]
+    public Slime slimeScript;
     [Signal]
     public delegate void SlimeInRangeEventHandler();
     [Signal]
@@ -33,6 +35,8 @@ public partial class SlimeManager : Node2D
         foxDetection.FoxDetected += OnFoxDetected;
         foxPet = GetNode<FoxPet>("/root/Base/Fox");
         foxPet.SlimeAttacked += OnSlimeAttacked;
+        foxPet.StopSlimeMovement += OnStopSlimeMovement;
+
     }
 
 
@@ -41,11 +45,18 @@ public partial class SlimeManager : Node2D
         //emit slime in range
         EmitSignal(nameof(SlimeInRange));
     }
-    
+
     private void OnSlimeAttacked()
     {
         GD.Print("Slime attacked by Fox");
         EmitSignal(nameof(SlimeAttacked));
+    }
+
+    private void OnStopSlimeMovement()
+    {
+        slimeScript._speed = 0;
+        GD.Print("Slime movement stopped by Fox");
+        foxPet.StopSlimeMovement -= OnStopSlimeMovement;
     }
 
 }

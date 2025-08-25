@@ -18,7 +18,7 @@ public partial class Slime : AnimatedSprite2D
     [Export]
     private float _offsetX;
     [Export]
-    private int _speed;
+    public int _speed;
     [Export]
     SlimeManager _slimeManager;
 

@@ -25,6 +25,7 @@ public partial class FoxPet : AnimatedSprite2D
 
 
     [Signal] public delegate void SlimeAttackedEventHandler();
+    [Signal] public delegate void StopSlimeMovementEventHandler();
     private bool _isFalling;
 
     private float _stateTimer = 0f;
@@ -200,7 +201,7 @@ public partial class FoxPet : AnimatedSprite2D
         // Check if the fox is close enough to the slime
         if (_slimeInRange)
         {
-
+            
             GD.Print("Fox is attacking the slime!");
             Vector2 slimePosition = _slimeManager.slimePrefab.Position;
             Position = pos;
@@ -210,6 +211,7 @@ public partial class FoxPet : AnimatedSprite2D
                 FlipH = pos.X > slimePosition.X;
                 _state = FoxState.AttackSlime;
                 Play("Attack");
+                EmitSignal(nameof(StopSlimeMovement));
                 var tcs = new TaskCompletionSource();
                 void Handler()
                 {
@@ -243,7 +245,6 @@ public partial class FoxPet : AnimatedSprite2D
     {
         EmitSignal(nameof(SlimeAttacked));
     }
-
 
 
     private void BeginIdle()
