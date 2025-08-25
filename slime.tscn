@@ -143,10 +143,8 @@ foxDetectionArea = NodePath("AnimatedSprite2D/FoxDetection")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." node_paths=PackedStringArray("_slimeManager")]
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_2002g")
-animation = &"BlowUp"
+animation = &"idle"
 autoplay = "idle"
-frame = 4
-frame_progress = 1.0
 offset = Vector2(0, 2.95)
 script = ExtResource("1_5jc4t")
 _offsetX = 900.0

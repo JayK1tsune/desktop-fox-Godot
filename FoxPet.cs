@@ -17,7 +17,7 @@ public partial class FoxPet : AnimatedSprite2D
     [Export] float _gravity = 2000f;
     [Export] float _maxFallSpeed = 1500f;
 
-    [Export] private ClickThrough clickThrough;
+    ClickThrough clickThrough;
 
     // ────── Internal ──────
     private enum FoxState { Moving, Idle, Sleeping, Mad, BeingDragged, AttackSlime }
@@ -51,9 +51,9 @@ public partial class FoxPet : AnimatedSprite2D
 
 
     // Ui interaction
-    [Export] private Control _ui;
-    [Export] private Ui UiScript;
-    [Export] SlimeManager _slimeManager;
+
+    Ui UiScript;
+    SlimeManager _slimeManager;
 
 
 
@@ -63,6 +63,11 @@ public partial class FoxPet : AnimatedSprite2D
 
     public override void _Ready()
     {
+        clickThrough = GetNode<ClickThrough>("/root/Window/ClickThrough");
+        UiScript = GetNode<Ui>("/root/Window/Ui_Root");
+        _slimeManager = GetTree().Root.GetNode<SlimeManager>("/root/Window/Slimes/Slime");
+
+
         UpdateWorkArea();
         var tex = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame());
         _spriteSize = tex.GetSize();
@@ -105,7 +110,7 @@ public partial class FoxPet : AnimatedSprite2D
             _spriteSize,
             0.5f);
 
-        bool hoveringUI = IsMouseOverUI(_ui);
+        bool hoveringUI = IsMouseOverUI(UiScript);
         bool hoveringOpaque = hoveringSprite || hoveringUI;
 
         // Toggle click-through purely on pixel opacity under mouse

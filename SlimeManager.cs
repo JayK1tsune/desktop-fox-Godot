@@ -3,12 +3,10 @@ using System;
 
 public partial class SlimeManager : Node2D
 {
-    [Export]
-    ClickThrough clickThrough;
+    private ClickThrough clickThrough;
+    private FoxPet foxPet;
     [Export]
     public FoxDetection foxDetection;
-    [Export]
-    FoxPet foxPet;
     [Export]
     public AnimatedSprite2D slimePrefab;
     [Export]
@@ -28,17 +26,21 @@ public partial class SlimeManager : Node2D
 
     public override void _Ready()
     {
+        GD.Print("slime is currently at: " + slimeScript.Position);
         if (clickThrough == null)
         {
-            clickThrough = GetNode<ClickThrough>("/root/Base/ClickThrough");
+            clickThrough = GetNode<ClickThrough>("/root/Window/ClickThrough");
         }
         foxDetection.FoxDetected += OnFoxDetected;
-        foxPet = GetNode<FoxPet>("/root/Base/Fox");
+        foxPet = GetNode<FoxPet>("/root/Window/Fox/Sprite");
         foxPet.SlimeAttacked += OnSlimeAttacked;
         foxPet.StopSlimeMovement += OnStopSlimeMovement;
 
     }
-
+    public override void _Process(double delta)
+    {
+        GD.Print("slime is currently at: " + slimeScript.Position);
+    }
 
     public void OnFoxDetected()
     {
@@ -54,6 +56,8 @@ public partial class SlimeManager : Node2D
 
     private void OnStopSlimeMovement()
     {
+        //flipH slime to face fox
+        slimeScript.FlipH = foxPet.GlobalPosition.X < slimeScript.GlobalPosition.X;
         slimeScript._speed = 0;
         GD.Print("Slime movement stopped by Fox");
         foxPet.StopSlimeMovement -= OnStopSlimeMovement;

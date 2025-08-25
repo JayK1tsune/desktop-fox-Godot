@@ -29,8 +29,8 @@ public partial class Slime : AnimatedSprite2D
     {
         var body = GetNode<Area2D>("ClickLogic");
         //use the getter to get the click through node
-        _clickThrough = GetParent<SlimeManager>().ClickThrough;
-        _foxPetScript = GetNode<FoxPet>("/root/Base/Fox");
+        _clickThrough = GetTree().Root.GetNode<ClickThrough>("Window/ClickThrough");
+        _foxPetScript = GetNode<FoxPet>("/root/Window/Fox/Sprite");
         var tex = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame());
         _slimeSprite = tex.GetSize();
         CallDeferred(nameof(UpdateSlimeLocation));

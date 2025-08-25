@@ -3,11 +3,11 @@ using System;
 
 public partial class Ui : Control
 {
-	[Export] ClickThrough clickThrough;
+	ClickThrough clickThrough;
 	[Export] FoxButtons_UI button;
 	[Export] private ColourButton colorPickerButton;
 
-	public FoxPet FoxPetScript;
+	[Export] public FoxPet FoxPetScript;
 
 	[Signal] public delegate void UiActiveEventHandler();
 	[Signal] public delegate void UiDisabledEventHandler();
@@ -15,7 +15,8 @@ public partial class Ui : Control
 
 	public override void _Ready()
 	{
-		FoxPetScript = GetNode<FoxPet>("/root/Base/Fox");
+		clickThrough = GetNode<ClickThrough>("/root/Window/ClickThrough");
+		FoxPetScript = GetNode<FoxPet>("/root/Window/Fox/Sprite");
 		clickThrough.SetClickThrough(false);
 		colorPickerButton.KeepClickThrough += KeepUiActive;   // Connect button signals
 		button.CloseUi += DisableUi; // Connect button signals

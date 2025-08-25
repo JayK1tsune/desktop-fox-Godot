@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3 uid="uid://bb8ufph28s1pv"]
+
+[ext_resource type="PackedScene" uid="uid://vtu0y4hh6svo" path="res://Fox.tscn" id="1_smuek"]
+[ext_resource type="PackedScene" uid="uid://crex03hmmfwe2" path="res://UI.tscn" id="2_hssbl"]
+[ext_resource type="Script" uid="uid://k35u5mg3867m" path="res://Assets/ClickThrough.cs" id="3_50st3"]
+[ext_resource type="PackedScene" uid="uid://tg4qwwig341h" path="res://slime.tscn" id="4_50st3"]
+
+[node name="Window" type="Node2D"]
+
+[node name="ClickThrough" type="Node" parent="."]
+script = ExtResource("3_50st3")
+
+[node name="Fox" parent="." instance=ExtResource("1_smuek")]
+position = Vector2(0, 29)
+
+[node name="Ui_Root" parent="." node_paths=PackedStringArray("FoxPetScript") instance=ExtResource("2_hssbl")]
+offset_top = 29.0
+offset_bottom = 29.0
+FoxPetScript = NodePath("../Fox/Sprite")
+
+[node name="Slimes" type="Node" parent="."]
+
+[node name="Slime" parent="Slimes" instance=ExtResource("4_50st3")]

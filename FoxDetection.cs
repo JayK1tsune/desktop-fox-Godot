@@ -12,7 +12,7 @@ public partial class FoxDetection : Area2D
     public override void _Ready()
     {
         _detectionArea = this;
-        _foxPetScript = GetNode<Area2D>("/root/Base/Fox/ClickLogic");
+        _foxPetScript = GetNode<Area2D>("/root/Window/Fox/Sprite/ClickLogic");
         _detectionArea.Connect("body_entered", new Callable(this, nameof(DetectFox)));
 
     }
