@@ -5,7 +5,7 @@ using Godot;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
-public partial class FoxPet : AnimatedSprite2D
+public partial class FoxPet : Node2D
 {
     // ────── Configurable ──────
     [Export] public float Speed = 30f;
@@ -16,6 +16,7 @@ public partial class FoxPet : AnimatedSprite2D
     [Export] float _fallVelocity = 0f;
     [Export] float _gravity = 2000f;
     [Export] float _maxFallSpeed = 1500f;
+    [Export] private AnimatedSprite2D _sprite;
 
     ClickThrough clickThrough;
 
@@ -34,7 +35,7 @@ public partial class FoxPet : AnimatedSprite2D
     private float _madDuration = 3f;
     private Vector2 _mousePosition;
     private Vector2 _spriteSize;
-    private AnimatedSprite2D _sprite;
+    
     private float _targetX;
     private Random _rng = new Random();
     public RECT _workArea;
@@ -69,64 +70,48 @@ public partial class FoxPet : AnimatedSprite2D
 
 
         UpdateWorkArea();
-        var tex = SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame());
+        var tex = _sprite.SpriteFrames.GetFrameTexture(_sprite.Animation, _sprite.Frame);
         _spriteSize = tex.GetSize();
         GD.PrintErr(_spriteSize);
         clickThrough.SetClickThrough(false);
         _targetX = GetNewTargetX();
-        Play("Idle");
-        _sprite = this;
-        var body = GetNode<Area2D>("ClickLogic");
+        _sprite.Play("Idle");
+        var body = FindChild("ClickLogic") as Area2D;
         body.InputPickable = true;
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
         _slimeManager.SlimeInRange += OnSlimeInRange;
-        AnimationFinished += OnAnimationFinished;
+        _sprite.AnimationFinished += OnAnimationFinished;
     }
 
-    public override async void _Process(double delta)
+    private Image _currentFrameImage;
+
+    public override void _Process(double delta)
     {
-        GD.Print(_uiActive);
-        IntPtr currentForeground = GetForegroundWindow();
-        IntPtr foxWindow = GetFoxWindowHandle();
-
-        if (currentForeground != IntPtr.Zero && currentForeground != foxWindow)
-        {
-            _previousWindowHandle = currentForeground;
-        }
-
         UpdateWorkArea();
-        await HandleFoxBehavior((float)delta);
+        _ = HandleFoxBehavior((float)delta);
 
-        _mousePosition = GetViewport().GetMousePosition();
+        Vector2 mousePos = GetViewport().GetMousePosition();
 
+        // Cache the current frame image once per frame
+        var frameTexture = _sprite.SpriteFrames.GetFrameTexture(_sprite.Animation, _sprite.Frame);
+        if (_currentFrameImage == null || _currentFrameImage.GetSize() != frameTexture.GetSize())
+            _currentFrameImage = frameTexture.GetImage();
 
-
-
-        // Check if mouse is over opaque pixel of the fox sprite
-        bool hoveringSprite = IsMouseOverOpaquePixelOnly(
-            SpriteFrames.GetFrameTexture(GetAnimation(), GetFrame()),
-            _mousePosition,
-            Position,
-            _spriteSize,
-            0.5f);
-
+        bool hoveringSprite = IsMouseOverOpaquePixel(frameTexture, _currentFrameImage, mousePos);
         bool hoveringUI = IsMouseOverUI(UiScript);
-        bool hoveringOpaque = hoveringSprite || hoveringUI;
 
-        // Toggle click-through purely on pixel opacity under mouse
-        clickThrough.SetClickThrough(!hoveringOpaque);
+        clickThrough.SetClickThrough(!(hoveringSprite || hoveringUI));
 
-        if (_waitingForClickRelease)
-            _clickTimer += (float)delta;
+        // Handle dragging
         if (_isDragging)
         {
-            Vector2 mousePos = GetGlobalMousePosition();
             GlobalPosition = mousePos - _dragOffset;
-            GD.Print("Dragging.");
             _state = FoxState.BeingDragged;
+            _sprite.Play("GettingDragged");
         }
 
     }
+
 
     private async Task HandleFoxBehavior(float delta)
     {
@@ -184,8 +169,8 @@ public partial class FoxPet : AnimatedSprite2D
         pos.X = Mathf.Clamp(pos.X, _workArea.Left, _workArea.Right - _spriteSize.X);
 
         Position = new Vector2(pos.X, Position.Y);
-        FlipH = direction < 0;
-        Play("Running");
+        _sprite.FlipH = direction < 0;
+        _sprite.Play("Running");
         UpdateFoxLocation(delta);
         if (!_isFalling && Mathf.Abs(_targetX - pos.X) < 5f)
             BeginIdle();
@@ -206,24 +191,23 @@ public partial class FoxPet : AnimatedSprite2D
         // Check if the fox is close enough to the slime
         if (_slimeInRange)
         {
-            
-            GD.Print("Fox is attacking the slime!");
             Vector2 slimePosition = _slimeManager.slimePrefab.Position;
             Position = pos;
             if (Mathf.Abs(slimePosition.X - pos.X) < 40f)
             {
                 //face the correct direction
-                FlipH = pos.X > slimePosition.X;
+                _sprite.FlipH = pos.X > slimePosition.X;
                 _state = FoxState.AttackSlime;
-                Play("Attack");
+                _sprite.Play("Attack");
+                _huntingSpeed = 50f; //reset hunting speed
                 EmitSignal(nameof(StopSlimeMovement));
                 var tcs = new TaskCompletionSource();
                 void Handler()
                 {
-                    AnimationFinished -= Handler;
+                    _sprite.AnimationFinished -= Handler;
                     tcs.SetResult();
                 }
-                AnimationFinished += Handler;
+                _sprite.AnimationFinished += Handler;
                 await tcs.Task; // Wait for the attack animation to finish
                 OnAnimationFinished();
             }
@@ -231,15 +215,16 @@ public partial class FoxPet : AnimatedSprite2D
             {
                 GD.Print("Fox is moving closer to the slime to attack.");
                 pos.X = Mathf.MoveToward(pos.X, slimePosition.X, _huntingSpeed * delta);
+
                 Position = pos;
-                FlipH = pos.X > slimePosition.X;
+                _sprite.FlipH = pos.X > slimePosition.X;
             }
         }
         else
         {
-            GD.Print("Fox is not close enough to attack the slime.");
             _state = FoxState.Moving;
-            Play("Running");
+            _slimeInRange = false;
+            _sprite.Play("Running");
         }
         Position = new Vector2(pos.X, pos.Y);
         _slimeInRange = false; // Reset slime in range after attack
@@ -257,12 +242,12 @@ public partial class FoxPet : AnimatedSprite2D
         _idleDuration = (float)(_rng.NextDouble() * 3 + 2);
         _stateTimer = 0f;
         _state = FoxState.Idle;
-        Play("Idle");
+        _sprite.Play("Idle");
     }
 
     private void BeginDrag()
     {
-        Play("GettingDragged");
+        _sprite.Play("GettingDragged");
     }
 
     private void TransitionTo(bool randomSleep)
@@ -272,9 +257,9 @@ public partial class FoxPet : AnimatedSprite2D
         _stateTimer = 0f;
 
         if (_state == FoxState.Sleeping)
-            Play("Sleeping");
+            _sprite.Play("Sleeping");
         else if (_state == FoxState.Moving)
-            Play("Running");
+            _sprite.Play("Running");
     }
 
     private float GetNewTargetX()
@@ -292,16 +277,20 @@ public partial class FoxPet : AnimatedSprite2D
     private void UpdateFoxLocation(float delta)
     {
         Vector2 pos = Position;
-        float groundY = _workArea.Bottom - _spriteSize.Y - BottomOffset;
 
-        // Check if fox is off the taskbar
-        if (Position.Y < groundY - 5f || _isFalling)
+        // Adjust ground Y so sprite bottom sits on taskbar
+        float groundY = _workArea.Bottom - _spriteSize.Y - BottomOffset;
+        
+
+        // Falling check
+        if (Position.Y < groundY || _isFalling)
         {
             _isFalling = true;
             _fallVelocity = Mathf.Min(_fallVelocity + _gravity * delta, _maxFallSpeed);
             pos.Y += _fallVelocity * delta;
             _state = FoxState.BeingDragged;
 
+            // Land
             if (pos.Y >= groundY)
             {
                 pos.Y = groundY;
@@ -312,11 +301,13 @@ public partial class FoxPet : AnimatedSprite2D
         }
         else
         {
-            pos.Y = groundY;
+            pos.Y = groundY; // Snap to ground
         }
 
         Position = new Vector2(Position.X, pos.Y);
     }
+
+
 
 
     public void UpdateWorkArea()
@@ -388,7 +379,7 @@ public partial class FoxPet : AnimatedSprite2D
 
                     _state = FoxState.Mad;
                     _stateTimer = 0f;
-                    Play("Mad");
+                    _sprite.Play("Mad");
 
                     if (_previousWindowHandle != IntPtr.Zero)
                     {
@@ -416,18 +407,21 @@ public partial class FoxPet : AnimatedSprite2D
     }
 
 
-    public bool IsMouseOverOpaquePixelOnly(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)
+    private bool IsMouseOverOpaquePixel(Texture2D texture, Image image, Vector2 mousePos, float alphaThreshold = 0.5f)
     {
-        if (_uiActive)  // Check if click-through is enabled
-        {
-            return false; // Ignore if click-through is enabled
-        }
-        Vector2 localPos = ToLocal(mousePos);
+        if (_uiActive) return false;
 
-        int x = Mathf.Clamp((int)(localPos.X + spriteSize.X / 2), 0, (int)spriteSize.X - 1);
-        int y = Mathf.Clamp((int)(localPos.Y + spriteSize.Y / 2), 0, (int)spriteSize.Y - 1);
+        // Local position relative to sprite
+        Vector2 localPos = _sprite.ToLocal(mousePos);
+        Vector2 scaledPos = localPos / _sprite.Scale;
 
-        Image image = texture.GetImage();
+        // Adjust for pivot
+        Vector2 texSize = texture.GetSize();
+        Vector2 pivotOffset = _sprite.Centered ? texSize / 2f : Vector2.Zero;
+        Vector2 texPos = scaledPos + pivotOffset;
+
+        int x = Mathf.Clamp((int)texPos.X, 0, (int)texSize.X - 1);
+        int y = Mathf.Clamp((int)texPos.Y, 0, (int)texSize.Y - 1);
 
         if (image != null)
         {
@@ -437,6 +431,8 @@ public partial class FoxPet : AnimatedSprite2D
 
         return false;
     }
+
+
 
     bool IsMouseOverUI(Control root)
     {

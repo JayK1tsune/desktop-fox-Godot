@@ -26,21 +26,16 @@ public partial class SlimeManager : Node2D
 
     public override void _Ready()
     {
-        GD.Print("slime is currently at: " + slimeScript.Position);
         if (clickThrough == null)
         {
             clickThrough = GetNode<ClickThrough>("/root/Window/ClickThrough");
         }
         foxDetection.FoxDetected += OnFoxDetected;
-        foxPet = GetNode<FoxPet>("/root/Window/Fox/Sprite");
+        foxPet = GetNode<FoxPet>("/root/Window/Fox");
         foxPet.SlimeAttacked += OnSlimeAttacked;
         foxPet.StopSlimeMovement += OnStopSlimeMovement;
+    }
 
-    }
-    public override void _Process(double delta)
-    {
-        GD.Print("slime is currently at: " + slimeScript.Position);
-    }
 
     public void OnFoxDetected()
     {

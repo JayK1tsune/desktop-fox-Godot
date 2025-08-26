@@ -7,7 +7,7 @@ public partial class Ui : Control
 	[Export] FoxButtons_UI button;
 	[Export] private ColourButton colorPickerButton;
 
-	[Export] public FoxPet FoxPetScript;
+	public FoxPet FoxPetScript;
 
 	[Signal] public delegate void UiActiveEventHandler();
 	[Signal] public delegate void UiDisabledEventHandler();
@@ -16,7 +16,7 @@ public partial class Ui : Control
 	public override void _Ready()
 	{
 		clickThrough = GetNode<ClickThrough>("/root/Window/ClickThrough");
-		FoxPetScript = GetNode<FoxPet>("/root/Window/Fox/Sprite");
+		FoxPetScript = GetNode<FoxPet>("/root/Window/Fox");
 		clickThrough.SetClickThrough(false);
 		colorPickerButton.KeepClickThrough += KeepUiActive;   // Connect button signals
 		button.CloseUi += DisableUi; // Connect button signals

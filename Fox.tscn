@@ -382,22 +382,17 @@ animations = [{
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_idrk7"]
 size = Vector2(20, 15.6666)
 
-[node name="Fox" type="Node2D"]
+[node name="Fox" type="Node2D" node_paths=PackedStringArray("_sprite")]
+script = ExtResource("2_idrk7")
+_sprite = NodePath("Sprite")
 
 [node name="Sprite" type="AnimatedSprite2D" parent="."]
-position = Vector2(669, 193)
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_omkn7")
 animation = &"Attack"
 autoplay = "Idle"
 frame = 1
 frame_progress = 0.455427
-script = ExtResource("2_idrk7")
-BottomOffset = 14.97
-sideOffset = 50.0
-_fallVelocity = 0.1
-_gravity = 1000.0
-_maxFallSpeed = 300.0
 
 [node name="ClickLogic" type="Area2D" parent="Sprite"]
 disable_mode = 2
