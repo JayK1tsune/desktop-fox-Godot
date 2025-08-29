@@ -72,12 +72,9 @@ public partial class FoxPet : Node2D
         UpdateWorkArea();
         var tex = _sprite.SpriteFrames.GetFrameTexture(_sprite.Animation, _sprite.Frame);
         _spriteSize = tex.GetSize();
-        GD.PrintErr(_spriteSize);
-        clickThrough.SetClickThrough(false);
         _targetX = GetNewTargetX();
         _sprite.Play("Idle");
         var body = FindChild("ClickLogic") as Area2D;
-        body.InputPickable = true;
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
         _slimeManager.SlimeInRange += OnSlimeInRange;
         _sprite.AnimationFinished += OnAnimationFinished;
@@ -100,7 +97,7 @@ public partial class FoxPet : Node2D
         bool hoveringSprite = IsMouseOverOpaquePixel(frameTexture, _currentFrameImage, mousePos);
         bool hoveringUI = IsMouseOverUI(UiScript);
 
-        clickThrough.SetClickThrough(!(hoveringSprite || hoveringUI));
+        clickThrough.SetClickThrough(!(hoveringSprite || hoveringUI || _uiActive));
 
         // Handle dragging
         if (_isDragging)

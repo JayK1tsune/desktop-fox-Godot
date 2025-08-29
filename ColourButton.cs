@@ -14,41 +14,16 @@ public partial class ColourButton : ColorPickerButton
     public override void _Ready()
     {
         base._Ready();
-        // Connect the signal to notify when a color picker is created
-        PickerCreated += _on_color_picker_button_picker_created;
-        GuiInput += OnButtonGuiInput;
+        Pressed += _on_color_picker_button_pressed;
         PopupClosed += _on_color_picker_button_popup_closed;
     }
 
-    public override void _Process(double delta)
-    {
-        if (_isDragging)
-        {
-            Vector2 mousePos = GetViewport().GetMousePosition();
-            Position = mousePos - _dragOffset;
-        }
-    }
 
-    private void OnButtonGuiInput(InputEvent @event)
-    {
-        if (@event is InputEventMouseButton mouseEvent && mouseEvent.ButtonIndex == MouseButton.Left)
-        {
-            if (mouseEvent.Pressed)
-            {
-                _isDragging = true;
-                _dragOffset = mouseEvent.Position;
-            }
-            else
-            {
-                _isDragging = false;
-            }
-        }
-    }
 
-    private void _on_color_picker_button_picker_created()
+    private void _on_color_picker_button_pressed()
     {
-        GD.Print("Color Picker Button Created");
-        // Emit the signal to notify that a color picker button has been created
+        GD.Print("Color Picker Button Pressed");
+        // Emit the signal to notify that the color picker button has been pressed
         EmitSignal(SignalName.KeepClickThrough);
     }
 

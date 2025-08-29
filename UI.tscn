@@ -55,5 +55,3 @@ offset_bottom = 83.0
 text = "Press me
 "
 script = ExtResource("4_qui0h")
-
-[connection signal="picker_created" from="UIControl/ColorPickerButton" to="." method="_on_color_picker_button_picker_created"]
