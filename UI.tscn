@@ -1,11 +1,54 @@
-[gd_scene load_steps=6 format=3 uid="uid://crex03hmmfwe2"]
+[gd_scene load_steps=8 format=3 uid="uid://crex03hmmfwe2"]
 
 [ext_resource type="Script" uid="uid://d6jyqr3oaqtx" path="res://Ui.cs" id="1_b3bc3"]
 [ext_resource type="Script" uid="uid://dfvylm8bx1fu6" path="res://ColourButton.cs" id="2_3b2b5"]
-[ext_resource type="Script" uid="uid://dewd6tgx105nq" path="res://AnimatedTextureRect.cs" id="3_qui0h"]
+[ext_resource type="StyleBox" uid="uid://bqitf1ydogk2k" path="res://Box.tres" id="2_qui0h"]
 [ext_resource type="Script" uid="uid://do88b8g61t24c" path="res://FoxButtons_UI.cs" id="4_qui0h"]
 
-[sub_resource type="Texture2DRD" id="Texture2DRD_g6l6n"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vrfts"]
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="FontFile" id="FontFile_0mc3e"]
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+cache/0/2/0/ascent = 0.0
+cache/0/2/0/descent = 0.0
+cache/0/2/0/underline_position = 0.0
+cache/0/2/0/underline_thickness = 0.0
+cache/0/2/0/scale = 1.0
+cache/0/7/0/ascent = 0.0
+cache/0/7/0/descent = 0.0
+cache/0/7/0/underline_position = 0.0
+cache/0/7/0/underline_thickness = 0.0
+cache/0/7/0/scale = 1.0
+cache/0/10/0/ascent = 0.0
+cache/0/10/0/descent = 0.0
+cache/0/10/0/underline_position = 0.0
+cache/0/10/0/underline_thickness = 0.0
+cache/0/10/0/scale = 1.0
+cache/0/11/0/ascent = 0.0
+cache/0/11/0/descent = 0.0
+cache/0/11/0/underline_position = 0.0
+cache/0/11/0/underline_thickness = 0.0
+cache/0/11/0/scale = 1.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2n5f6"]
+bg_color = Color(0.886121, 0.470788, 0.246161, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+anti_aliasing = false
 
 [node name="Ui_Root" type="Control" node_paths=PackedStringArray("button", "colorPickerButton")]
 layout_mode = 3
@@ -14,44 +57,44 @@ script = ExtResource("1_b3bc3")
 button = NodePath("UIControl/Button")
 colorPickerButton = NodePath("UIControl/ColorPickerButton")
 
-[node name="UIControl" type="Control" parent="." groups=["UI"]]
+[node name="UIControl" type="Panel" parent="." groups=["UI"]]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
+offset_left = 22.0
+offset_top = 24.0
+offset_right = 219.0
+offset_bottom = 210.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="TextureRect" type="TextureRect" parent="UIControl"]
-visible = false
-layout_mode = 0
-offset_left = 649.0
-offset_top = 214.0
-offset_right = 780.0
-offset_bottom = 346.0
-texture = SubResource("Texture2DRD_g6l6n")
-script = ExtResource("3_qui0h")
-animationName = "Open"
+theme_override_styles/panel = ExtResource("2_qui0h")
 
 [node name="ColorPickerButton" type="ColorPickerButton" parent="UIControl" groups=["UI"]]
-layout_mode = 0
-offset_left = 46.0
-offset_top = 11.0
-offset_right = 168.0
-offset_bottom = 42.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -31.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_vrfts")
 text = "Change Colour"
 script = ExtResource("2_3b2b5")
 
 [node name="Button" type="Button" parent="UIControl" groups=["UI"]]
-layout_mode = 0
-offset_left = 44.0
-offset_top = 45.0
-offset_right = 166.0
-offset_bottom = 83.0
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 31.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = SubResource("FontFile_0mc3e")
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = SubResource("StyleBoxFlat_2n5f6")
 text = "Press me
 "
 script = ExtResource("4_qui0h")
