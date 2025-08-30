@@ -15,8 +15,6 @@ script = ExtResource("3_50st3")
 _maxFallSpeed = 700.0
 
 [node name="Ui_Root" parent="." instance=ExtResource("2_hssbl")]
-offset_top = 29.0
-offset_bottom = 29.0
 
 [node name="Slimes" type="Node" parent="."]
 script = ExtResource("4_h44km")

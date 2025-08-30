@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-public partial class Ui : Control
+public partial class Ui : CanvasGroup
 {
 	ClickThrough clickThrough;
 	[Export] FoxButtons_UI button;

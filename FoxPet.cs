@@ -431,13 +431,16 @@ public partial class FoxPet : Node2D
 
 
 
-    bool IsMouseOverUI(Control root)
+    bool IsMouseOverUI(CanvasGroup root)
     {
         if (root == null || !root.Visible)
             return false;
 
         Vector2 mousePos = GetViewport().GetMousePosition();
-        return IsMouseOverAnyControlRecursive(root, mousePos);
+        // Get the root Control node from the CanvasGroup
+        if (root.GetChildCount() > 0 && root.GetChild(0) is Control controlRoot)
+            return IsMouseOverAnyControlRecursive(controlRoot, mousePos);
+        return false;
     }
 
     bool IsMouseOverAnyControlRecursive(Control node, Vector2 mousePos)
