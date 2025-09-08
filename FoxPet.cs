@@ -110,13 +110,15 @@ public partial class FoxPet : Node2D
         // Find the slime which has a valid detection area or first valid slime.
         foreach (var slime in slimeContainer.GetSlimes())
         {
+            //break out once the first valid slime is found
             if (slime is SlimeManager slimeManager && slimeManager.foxDetectionArea != null)
             {
                 _targetSlime = slime;
                 _state = FoxState.AttackSlime;
                 GD.Print("Fox: Slime in range, attacking!");
-                return;
+                break;
             }
+            return;
         }
     }
 

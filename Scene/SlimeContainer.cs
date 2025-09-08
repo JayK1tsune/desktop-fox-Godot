@@ -21,7 +21,10 @@ public partial class SlimeContainer : Node
 
         if (slimes.Count <= 0)
         {
-            SpawnSlime();
+            if (slimePrefab != null)
+            {
+                SpawnSlime();
+            }
         }
 
         GD.Print("Slimes in container: " + slimes.Count);
