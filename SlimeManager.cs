@@ -34,6 +34,11 @@ public partial class SlimeManager : Node2D
         foxPet = GetNode<FoxPet>("/root/Window/Fox");
         foxPet.SlimeAttacked += OnSlimeAttacked;
         foxPet.StopSlimeMovement += OnStopSlimeMovement;
+        //check to see if the connected signal is null
+        if (foxDetection == null)
+        {
+            GD.Print("FoxDetection is null");
+        }
     }
 
 
@@ -51,11 +56,25 @@ public partial class SlimeManager : Node2D
 
     private void OnStopSlimeMovement()
     {
+        if (!IsInstanceIdValid(slimeScript.GetInstanceId()))
+        {
+            GD.Print("Slime instance is no longer valid.");
+            return;
+        }
         //flipH slime to face fox
         slimeScript.FlipH = foxPet.GlobalPosition.X < slimeScript.GlobalPosition.X;
         slimeScript._speed = 0;
         GD.Print("Slime movement stopped by Fox");
         foxPet.StopSlimeMovement -= OnStopSlimeMovement;
+    }
+    
+    public override void _ExitTree()
+    {
+        if (foxPet != null)
+        {
+            foxPet.SlimeAttacked -= OnSlimeAttacked;
+            foxPet.StopSlimeMovement -= OnStopSlimeMovement;
+        }
     }
 
 }

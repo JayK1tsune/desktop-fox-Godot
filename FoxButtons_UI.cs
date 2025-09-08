@@ -1,6 +1,7 @@
 using Godot;
 using System;
 
+
 public partial class FoxButtons_UI : Button
 {
 
@@ -8,7 +9,7 @@ public partial class FoxButtons_UI : Button
     public delegate void CloseUiEventHandler();
     private bool _isDragging = false;
     private Vector2 _dragOffset;
-
+   
 
     public override void _Ready()
     {
@@ -44,6 +45,9 @@ public partial class FoxButtons_UI : Button
     public void _on_button_pressed()
 	{
 		GD.Print("Spawn More Button Pressed");
+        SlimeContainer.Instance.SpawnSlime();
+        GD.Print("Slimes in container: " + SlimeContainer.Instance.GetSlimes().Count);
+
 		EmitSignal(SignalName.CloseUi);
 	}
 }

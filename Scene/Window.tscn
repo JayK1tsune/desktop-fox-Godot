@@ -18,5 +18,4 @@ _maxFallSpeed = 700.0
 
 [node name="Slimes" type="Node" parent="."]
 script = ExtResource("4_h44km")
-
-[node name="Slime" parent="Slimes" instance=ExtResource("4_50st3")]
+slimePrefab = ExtResource("4_50st3")

@@ -11,6 +11,8 @@ public partial class Ui : CanvasGroup
 	private AnimatedSprite2D _foxSprite;
 	private Sprite2D _foxSprite2D;
 
+	
+
 
 	public override void _Ready()
 	{
@@ -37,6 +39,6 @@ public partial class Ui : CanvasGroup
 	public void DisableUi()
 	{
 		FoxPetScript._uiActive = false;
-		this.Visible = false;
+		//this.Visible = false;
 	}
 }

@@ -103,7 +103,7 @@ public partial class Slime : AnimatedSprite2D
             case SpriteAnimations.BlowUp:
                 Play("BlowUp");
                 var timer = GetTree().CreateTimer(0.5f);
-                timer.Connect("timeout", new Callable(this, nameof(OnSlimeAnimationEnd)));
+                CallDeferred(nameof(StartBlowUpTimer));
                 break;
             case SpriteAnimations.Moving:
                 Play("Moving");
@@ -124,14 +124,26 @@ public partial class Slime : AnimatedSprite2D
         }
     }
 
+    private void SafeRemoveSlime()
+    {
+        if (SlimeContainer.Instance != null)
+        {
+            if (_slimeManager != null)
+            {
+                _slimeManager.SlimeAttacked -= SlimeAttacked;
+            }
+
+            SlimeContainer.Instance.RemoveSlime(GetParent<Node2D>());
+        }
+    }
     private void OnSlimeAnimationEnd()
     {
-        //delte if the slime is not null
-        if (GetParent() != null)
-        {
-            GetParent().RemoveChild(this);
-            QueueFree();
-        }
+        CallDeferred(nameof(SafeRemoveSlime));
+    }
+    private void StartBlowUpTimer()
+    {
+        var timer = GetTree().CreateTimer(0.5f);
+        timer.Timeout += OnSlimeAnimationEnd;
     }
 
     private bool IsMouseOverOpaquePixelOnly(Texture2D texture, Vector2 mousePos, Vector2 spritePos, Vector2 spriteSize, float alphaThreshold = 0.5f)

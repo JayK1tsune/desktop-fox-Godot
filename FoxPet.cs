@@ -2,12 +2,10 @@ using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Godot;
-using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
 public partial class FoxPet : Node2D
 {
-    // ────── Configurable ──────
     [Export] public float Speed = 30f;
     [Export] public float _huntingSpeed = 50f;
     [Export] public float TopOffset = 50f;
@@ -20,22 +18,18 @@ public partial class FoxPet : Node2D
 
     ClickThrough clickThrough;
 
-    // ────── Internal ──────
     private enum FoxState { Moving, Idle, Sleeping, Mad, BeingDragged, AttackSlime }
     private FoxState _state = FoxState.Moving;
 
-
     [Signal] public delegate void SlimeAttackedEventHandler();
     [Signal] public delegate void StopSlimeMovementEventHandler();
-    private bool _isFalling;
 
+    private bool _isFalling;
     private float _stateTimer = 0f;
     private float _idleDuration = 0f;
     private float _sleepDuration = 5f;
     private float _madDuration = 3f;
-    private Vector2 _mousePosition;
     private Vector2 _spriteSize;
-    
     private float _targetX;
     private Random _rng = new Random();
     public RECT _workArea;
@@ -46,41 +40,85 @@ public partial class FoxPet : Node2D
     private Vector2 _dragOffset;
     public bool _uiActive = false;
 
-    private float _clickTimer = 0f;
-    private bool _waitingForClickRelease = false;
-    private bool _slimeInRange = false;
+    private Image _currentFrameImage;
+    private Node2D _targetSlime;
 
-
-    // Ui interaction
-
+    // UI and Slimes
     Ui UiScript;
-    SlimeManager _slimeManager;
-
-
-
-
-
-
+    SlimeContainer slimeContainer;
 
     public override void _Ready()
     {
         clickThrough = GetNode<ClickThrough>("/root/Window/ClickThrough");
         UiScript = GetNode<Ui>("/root/Window/Ui_Root");
-        _slimeManager = GetTree().Root.GetNode<SlimeManager>("/root/Window/Slimes/Slime");
-
+        slimeContainer = GetNode<SlimeContainer>("/root/Window/Slimes");
 
         UpdateWorkArea();
         var tex = _sprite.SpriteFrames.GetFrameTexture(_sprite.Animation, _sprite.Frame);
         _spriteSize = tex.GetSize();
         _targetX = GetNewTargetX();
         _sprite.Play("Idle");
+
         var body = FindChild("ClickLogic") as Area2D;
-        body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
-        _slimeManager.SlimeInRange += OnSlimeInRange;
+        if (body != null)
+            body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
+
         _sprite.AnimationFinished += OnAnimationFinished;
+        slimeContainer.SlimeRemoved += OnSlimeRemoved;
+
+        // Connect existing slimes
+        ConnectAllSlimes();
+
+        // Listen for newly spawned slimes under the container
+        slimeContainer.ChildEnteredTree += OnSlimeSpawned;
     }
 
-    private Image _currentFrameImage;
+    private void ConnectAllSlimes()
+    {
+        if (slimeContainer == null) return;
+        foreach (var slime in slimeContainer.GetSlimes())
+        {
+            if (slime is SlimeManager slimeManager)
+                slimeManager.SlimeInRange += OnSlimeInRange;
+        }
+    }
+
+    private void OnSlimeSpawned(Node node)
+    {
+        if (node is SlimeManager slimeManager)
+            slimeManager.SlimeInRange += OnSlimeInRange;
+        GD.Print("Connected to new slime's SlimeInRange signal.");
+        // Optionally, immediately check if the new slime is in range
+        OnSlimeInRange();
+    }
+
+    private void OnSlimeRemoved(Node2D slime)
+    {
+        if (slime is SlimeManager slimeManager)
+        {
+            slimeManager.SlimeInRange -= OnSlimeInRange;
+            if (_targetSlime == slime)
+                _targetSlime = null;
+        }
+    }
+
+    // Called when a slime's foxDetection Area2D emits SlimeInRange
+    private void OnSlimeInRange()
+    {
+        if (slimeContainer == null) return;
+
+        // Find the slime which has a valid detection area or first valid slime.
+        foreach (var slime in slimeContainer.GetSlimes())
+        {
+            if (slime is SlimeManager slimeManager && slimeManager.foxDetectionArea != null)
+            {
+                _targetSlime = slime;
+                _state = FoxState.AttackSlime;
+                GD.Print("Fox: Slime in range, attacking!");
+                return;
+            }
+        }
+    }
 
     public override void _Process(double delta)
     {
@@ -88,8 +126,6 @@ public partial class FoxPet : Node2D
         _ = HandleFoxBehavior((float)delta);
 
         Vector2 mousePos = GetViewport().GetMousePosition();
-
-        // Cache the current frame image once per frame
         var frameTexture = _sprite.SpriteFrames.GetFrameTexture(_sprite.Animation, _sprite.Frame);
         if (_currentFrameImage == null || _currentFrameImage.GetSize() != frameTexture.GetSize())
             _currentFrameImage = frameTexture.GetImage();
@@ -99,16 +135,13 @@ public partial class FoxPet : Node2D
 
         clickThrough.SetClickThrough(!(hoveringSprite || hoveringUI || _uiActive));
 
-        // Handle dragging
         if (_isDragging)
         {
             GlobalPosition = mousePos - _dragOffset;
             _state = FoxState.BeingDragged;
             _sprite.Play("GettingDragged");
         }
-
     }
-
 
     private async Task HandleFoxBehavior(float delta)
     {
@@ -117,122 +150,143 @@ public partial class FoxPet : Node2D
             case FoxState.Moving:
                 MoveTowardTarget(delta);
                 break;
-
             case FoxState.Idle:
                 _stateTimer += delta;
                 if (_stateTimer >= _idleDuration)
-                    TransitionTo(randomSleep: _rng.NextDouble() < 0.3);
+                    TransitionTo(_rng.NextDouble() < 0.3);
                 break;
-
             case FoxState.Sleeping:
                 _stateTimer += delta;
                 if (_stateTimer >= _sleepDuration)
-                    TransitionTo(randomSleep: false);
+                    TransitionTo(false);
                 break;
-
             case FoxState.Mad:
                 _stateTimer += delta;
                 if (_stateTimer >= _madDuration)
-                    TransitionTo(randomSleep: false);
+                    TransitionTo(false);
                 break;
             case FoxState.BeingDragged:
                 UpdateFoxLocation(delta);
                 BeginDrag();
                 break;
             case FoxState.AttackSlime:
-                if (_slimeManager.foxDetectionArea != null)
-                {
-                    _slimeManager.foxDetectionArea.QueueFree();
-                    _slimeManager.foxDetectionArea = null;
-                }    
-                await AttackSlime(delta);
-                break;
-            default:
-                GD.PrintErr("Unknown FoxState: " + _state);
+                if (_targetSlime != null)
+                    await AttackSlime(_targetSlime, delta);
+                else
+                    _state = FoxState.Moving;
                 break;
         }
     }
 
-    private async void MoveTowardTarget(float delta)
+    private void MoveTowardTarget(float delta)
     {
-        if (_slimeInRange)
+        // If target slime exists let AttackSlime handle movement/approach
+        if (_targetSlime != null)
         {
-            await AttackSlime(delta);
+            // do nothing here; AttackSlime will run in HandleFoxBehavior
             return;
         }
-        Vector2 pos = Position;
+
+        Vector2 pos = GlobalPosition;
         float direction = _targetX > pos.X ? 1f : -1f;
         pos.X += direction * Speed * delta;
         pos.X = Mathf.Clamp(pos.X, _workArea.Left, _workArea.Right - _spriteSize.X);
 
-        Position = new Vector2(pos.X, Position.Y);
+        GlobalPosition = new Vector2(pos.X, pos.Y);
         _sprite.FlipH = direction < 0;
         _sprite.Play("Running");
         UpdateFoxLocation(delta);
         if (!_isFalling && Mathf.Abs(_targetX - pos.X) < 5f)
             BeginIdle();
-
     }
 
-    private async Task AttackSlime(float delta)
+    // AttackSlime now queries the slime's GLOBAL position so offsets inside the manager are handled
+    private async Task AttackSlime(Node2D slime, float delta)
     {
-        if (_slimeManager.slimePrefab == null || !IsInstanceValid(_slimeManager.slimePrefab))
+        if (slime == null || !IsInstanceValid(slime))
         {
             _state = FoxState.Moving;
-               return;
+            _targetSlime = null;
+            return;
         }
 
-        Vector2 pos = Position;
+        Vector2 foxPos = GlobalPosition;
         float groundY = _workArea.Bottom - _spriteSize.Y - BottomOffset;
-        pos.Y = groundY;
-        // Check if the fox is close enough to the slime
-        if (_slimeInRange)
-        {
-            Vector2 slimePosition = _slimeManager.slimePrefab.Position;
-            Position = pos;
-            if (Mathf.Abs(slimePosition.X - pos.X) < 40f)
-            {
-                //face the correct direction
-                _sprite.FlipH = pos.X > slimePosition.X;
-                _state = FoxState.AttackSlime;
-                _sprite.Play("Attack");
-                _huntingSpeed = 50f; //reset hunting speed
-                EmitSignal(nameof(StopSlimeMovement));
-                var tcs = new TaskCompletionSource();
-                void Handler()
-                {
-                    _sprite.AnimationFinished -= Handler;
-                    tcs.SetResult();
-                }
-                _sprite.AnimationFinished += Handler;
-                await tcs.Task; // Wait for the attack animation to finish
-                OnAnimationFinished();
-            }
-            else
-            {
-                GD.Print("Fox is moving closer to the slime to attack.");
-                pos.X = Mathf.MoveToward(pos.X, slimePosition.X, _huntingSpeed * delta);
+        foxPos.Y = groundY;
 
-                Position = pos;
-                _sprite.FlipH = pos.X > slimePosition.X;
+        Vector2 slimePos = GetSlimeGlobalPosition(slime);
+
+        // If slimePos is zero, treat as invalid
+        if (slimePos == Vector2.Zero)
+        {
+            _state = FoxState.Moving;
+            _targetSlime = null;
+            return;
+        }
+
+        // If close enough on X, play attack
+        if (Mathf.Abs(slimePos.X - foxPos.X) < 40f)
+        {
+            _sprite.FlipH = foxPos.X > slimePos.X;
+            _state = FoxState.AttackSlime;
+            _sprite.Play("Attack");
+            EmitSignal(nameof(StopSlimeMovement));
+
+            var tcs = new TaskCompletionSource();
+            void Handler()
+            {
+                _sprite.AnimationFinished -= Handler;
+                tcs.SetResult();
             }
+            _sprite.AnimationFinished += Handler;
+            await tcs.Task;
+            OnAnimationFinished();
+
+            // After attack clear target so we don't re-attack instantaneously
+            _targetSlime = null;
         }
         else
         {
-            _state = FoxState.Moving;
-            _slimeInRange = false;
+            // Move toward the slime using global coordinates
+            foxPos.X = Mathf.MoveToward(foxPos.X, slimePos.X, _huntingSpeed * delta);
+            foxPos.X = Mathf.Clamp(foxPos.X, _workArea.Left, _workArea.Right - _spriteSize.X);
+            GlobalPosition = foxPos;
             _sprite.Play("Running");
+            _sprite.FlipH = foxPos.X > slimePos.X;
         }
-        Position = new Vector2(pos.X, pos.Y);
-        _slimeInRange = false; // Reset slime in range after attack
-        _stateTimer = 0f; // Reset state timer after attack
+
+        _stateTimer = 0f;
+    }
+
+    // Helper: try to resolve the actual global position of the visible slime
+    private Vector2 GetSlimeGlobalPosition(Node2D slimeNode)
+    {
+        if (slimeNode == null || !IsInstanceValid(slimeNode)) return Vector2.Zero;
+
+        // If this is a SlimeManager, try common exported children that contain the sprite
+        if (slimeNode is SlimeManager sm)
+        {
+            // Prefer slimeScript (likely the Slime node) if available
+            if (sm.slimeScript != null && IsInstanceValid(sm.slimeScript))
+                return sm.slimeScript.GlobalPosition;
+
+            // Fall back to exported AnimatedSprite2D
+            if (sm.slimePrefab != null && IsInstanceValid(sm.slimePrefab))
+                return sm.slimePrefab.GlobalPosition;
+
+            // Fallback to Area2D center if present
+            if (sm.foxDetectionArea != null && IsInstanceValid(sm.foxDetectionArea))
+                return sm.foxDetectionArea.GlobalPosition;
+        }
+
+        // Fallback: the node's global position
+        return slimeNode.GlobalPosition;
     }
 
     private void OnAnimationFinished()
     {
         EmitSignal(nameof(SlimeAttacked));
     }
-
 
     private void BeginIdle()
     {
@@ -273,21 +327,16 @@ public partial class FoxPet : Node2D
 
     private void UpdateFoxLocation(float delta)
     {
-        Vector2 pos = Position;
-
-        // Adjust ground Y so sprite bottom sits on taskbar
+        Vector2 pos = GlobalPosition;
         float groundY = _workArea.Bottom - _spriteSize.Y - BottomOffset;
-        
 
-        // Falling check
-        if (Position.Y < groundY || _isFalling)
+        if (pos.Y < groundY || _isFalling)
         {
             _isFalling = true;
             _fallVelocity = Mathf.Min(_fallVelocity + _gravity * delta, _maxFallSpeed);
             pos.Y += _fallVelocity * delta;
             _state = FoxState.BeingDragged;
 
-            // Land
             if (pos.Y >= groundY)
             {
                 pos.Y = groundY;
@@ -298,18 +347,14 @@ public partial class FoxPet : Node2D
         }
         else
         {
-            pos.Y = groundY; // Snap to ground
+            pos.Y = groundY;
         }
 
-        Position = new Vector2(Position.X, pos.Y);
+        GlobalPosition = new Vector2(pos.X, pos.Y);
     }
-
-
-
 
     public void UpdateWorkArea()
     {
-        // Only update work area to the foreground window if dragging
         if (_isDragging)
         {
             RECT rect;
@@ -321,33 +366,19 @@ public partial class FoxPet : Node2D
             }
         }
 
-        // Default fallback: taskbar/desktop
         SystemParametersInfo(SPI_GETWORKAREA, 0, out _workArea, 0);
     }
 
-
-    // ────── Windows API ──────
     private const uint SPI_GETWORKAREA = 0x0030;
-    //need to check to see where i can  reduce this bloat
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left, Top, Right, Bottom; }
-
     private IntPtr _previousWindowHandle = IntPtr.Zero;
-
-    private IntPtr GetFoxWindowHandle()
-    {
-        return Process.GetCurrentProcess().MainWindowHandle;
-    }
-
+    private IntPtr GetFoxWindowHandle() => Process.GetCurrentProcess().MainWindowHandle;
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, out RECT pvParam, uint fWinIni);
-
-    // ────── User Input ──────
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     private void OnInputEvent(Node viewport, InputEvent @event, int shapeIdx)
     {
@@ -358,21 +389,16 @@ public partial class FoxPet : Node2D
                 _clickStartPosition = mouseEvent.GlobalPosition;
                 _isClickCandidate = true;
             }
-            else // Released
+            else
             {
                 float distance = (mouseEvent.GlobalPosition - _clickStartPosition).Length();
 
                 if (_isClickCandidate && distance < DragThreshold)
                 {
-                    // Treat this as a click or double-click
                     if (mouseEvent.DoubleClick)
-                    {
                         GD.Print("Double Clicked Fox");
-                    }
                     else
-                    {
                         GD.Print("Single Clicked Fox");
-                    }
 
                     _state = FoxState.Mad;
                     _stateTimer = 0f;
@@ -395,7 +421,6 @@ public partial class FoxPet : Node2D
             float moveDistance = (mouseMotion.GlobalPosition - _clickStartPosition).Length();
             if (moveDistance >= DragThreshold)
             {
-                // Start dragging
                 _isDragging = true;
                 _dragOffset = mouseMotion.GlobalPosition - GlobalPosition;
                 _isClickCandidate = false;
@@ -403,16 +428,11 @@ public partial class FoxPet : Node2D
         }
     }
 
-
     private bool IsMouseOverOpaquePixel(Texture2D texture, Image image, Vector2 mousePos, float alphaThreshold = 0.5f)
     {
         if (_uiActive) return false;
-
-        // Local position relative to sprite
         Vector2 localPos = _sprite.ToLocal(mousePos);
         Vector2 scaledPos = localPos / _sprite.Scale;
-
-        // Adjust for pivot
         Vector2 texSize = texture.GetSize();
         Vector2 pivotOffset = _sprite.Centered ? texSize / 2f : Vector2.Zero;
         Vector2 texPos = scaledPos + pivotOffset;
@@ -429,15 +449,12 @@ public partial class FoxPet : Node2D
         return false;
     }
 
-
-
     bool IsMouseOverUI(CanvasGroup root)
     {
         if (root == null || !root.Visible)
             return false;
 
         Vector2 mousePos = GetViewport().GetMousePosition();
-        // Get the root Control node from the CanvasGroup
         if (root.GetChildCount() > 0 && root.GetChild(0) is Control controlRoot)
             return IsMouseOverAnyControlRecursive(controlRoot, mousePos);
         return false;
@@ -445,9 +462,7 @@ public partial class FoxPet : Node2D
 
     bool IsMouseOverAnyControlRecursive(Control node, Vector2 mousePos)
     {
-        if (node.Visible
-            && node.MouseFilter != Control.MouseFilterEnum.Ignore
-            && node.GetGlobalRect().HasPoint(mousePos))
+        if (node.Visible && node.MouseFilter != Control.MouseFilterEnum.Ignore && node.GetGlobalRect().HasPoint(mousePos))
         {
             GD.Print("Mouse is over UI element: " + node.Name);
             return true;
@@ -464,15 +479,4 @@ public partial class FoxPet : Node2D
 
         return false;
     }
-
-    private void OnSlimeInRange()
-    {
-        GD.Print("Slime in range detected by FoxPet");
-        _slimeInRange = true;
-    }
-
-
-
-
-
 }
