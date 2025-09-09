@@ -21,8 +21,8 @@ public partial class FoxPet : Node2D
     private enum FoxState { Moving, Idle, Sleeping, Mad, BeingDragged, AttackSlime }
     private FoxState _state = FoxState.Moving;
 
-    [Signal] public delegate void SlimeAttackedEventHandler();
-    [Signal] public delegate void StopSlimeMovementEventHandler();
+    [Signal] public delegate void SlimeAttackedEventHandler(Node2D slime);
+    [Signal] public delegate void StopSlimeMovementEventHandler(Node2D slime);
 
     private bool _isFalling;
     private float _stateTimer = 0f;
@@ -41,7 +41,7 @@ public partial class FoxPet : Node2D
     public bool _uiActive = false;
 
     private Image _currentFrameImage;
-    private Node2D _targetSlime;
+    [Export] private Node2D _targetSlime;
 
     // UI and Slimes
     Ui UiScript;
@@ -116,9 +116,8 @@ public partial class FoxPet : Node2D
                 _targetSlime = slime;
                 _state = FoxState.AttackSlime;
                 GD.Print("Fox: Slime in range, attacking!");
-                break;
             }
-            return;
+        
         }
     }
 
@@ -232,7 +231,7 @@ public partial class FoxPet : Node2D
             _sprite.FlipH = foxPos.X > slimePos.X;
             _state = FoxState.AttackSlime;
             _sprite.Play("Attack");
-            EmitSignal(nameof(StopSlimeMovement));
+            EmitSignal(nameof(StopSlimeMovement), slime);
             var tcs = new TaskCompletionSource();
             void Handler()
             {
@@ -242,7 +241,7 @@ public partial class FoxPet : Node2D
             _sprite.AnimationFinished += Handler;
             await tcs.Task;
             OnAnimationFinished();
-            EmitSignal(nameof(SlimeAttacked));
+            EmitSignal(nameof(SlimeAttacked), slime);
             // After attack clear target so we don't re-attack instantaneously
             _targetSlime = null;
         }

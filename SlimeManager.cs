@@ -5,91 +5,78 @@ public partial class SlimeManager : Node2D
 {
     private ClickThrough clickThrough;
     private FoxPet foxPet;
-    [Export]
-    public FoxDetection foxDetection;
-    [Export]
-    public AnimatedSprite2D slimePrefab;
-    [Export]
-    public Slime slimeScript;
-    [Signal]
-    public delegate void SlimeInRangeEventHandler();
-    [Signal]
-    public delegate void SlimeAttackedEventHandler();
-    [Export]
-    public Area2D foxDetectionArea;
+
+    [Export] public FoxDetection foxDetection;
+    [Export] public AnimatedSprite2D slimePrefab;
+    [Export] public Slime slimeScript;
+
+    [Signal] public delegate void SlimeInRangeEventHandler();
+    [Signal] public delegate void SlimeAttackedEventHandler(Node2D slime);
+    [Signal] public delegate void StopSlimeMovementEventHandler(Node2D slime);
+
+    [Export] public Area2D foxDetectionArea;
+
     public ClickThrough ClickThrough
     {
         get => clickThrough;
         set => clickThrough = value;
-
     }
 
     public override void _Ready()
     {
         if (clickThrough == null)
-        {
             clickThrough = GetNode<ClickThrough>("/root/Window/ClickThrough");
-        }
+
+        if (foxDetection == null)
+            GD.Print("FoxDetection is null");
+
         foxDetection.FoxDetected += OnFoxDetected;
         foxPet = GetNode<FoxPet>("/root/Window/Fox");
+
+        // Subscribe to fox signals
         foxPet.SlimeAttacked += OnSlimeAttacked;
         foxPet.StopSlimeMovement += OnStopSlimeMovement;
-        //check to see if the connected signal is null
-        if (foxDetection == null)
-        {
-            GD.Print("FoxDetection is null");
-        }
     }
 
-
-    public void OnFoxDetected()
+    private void OnFoxDetected()
     {
-        //emit slime in range
         EmitSignal(nameof(SlimeInRange));
     }
 
-    private void OnSlimeAttacked()
+    // Called when the fox attacks a slime
+    private void OnSlimeAttacked(Node2D slime)
     {
-        GD.Print("Slime attacked signal received by SlimeManager");
-        foreach (var child in GetChildren())
+        if (slime == null)
+            return;
+
+        // Get the AnimatedSprite2D child that has the Slime.cs script
+        var animatedSprite = slime.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+        if (animatedSprite is Slime slimeScript)
         {
-            if (child is Slime attackedSlime)
-            {
-                attackedSlime.SlimeAttacked();
-                //unsubscribe from further attacks to prevent multiple attacks
-                foxPet.SlimeAttacked -= OnSlimeAttacked;
-                GD.Print("Slime attacked signal received by SlimeManager");
-                break; // Attack only one slime
-            }
-            else
-            {
-                GD.Print("No slime found to attack");
-            }
+            slimeScript.SlimeAttacked();
+            //disconmnect the signal after attacking
+            foxPet.SlimeAttacked -= OnSlimeAttacked;
+            GD.Print($"Slime {slime.Name} attacked!");
         }
-        
     }
 
-    private void OnStopSlimeMovement()
+    // Called when the fox tells a slime to stop moving
+    private void OnStopSlimeMovement(Node2D slime)
     {
-        GD.Print("Stop slime movement signal received by SlimeManager");
-        foreach (var child in GetChildren())
+        if (slime == null)
+            return;
+
+        var animatedSprite = slime.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+        if (animatedSprite is Slime slimeScript)
         {
-            if (child is Slime attackedSlime)
-            {
-                attackedSlime._speed = 0;
-                //flip the slime to face the fox
-                attackedSlime.FlipH = foxPet.Position.X < attackedSlime.Position.X;
-                foxPet.StopSlimeMovement -= OnStopSlimeMovement;
-                GD.Print("Slime movement stopped");
-            }
-            else
-            {
-                GD.Print("No slime found to stop movement");
-            }
+            slimeScript.FlipH = foxPet.Position.X < slimeScript.Position.X;
+            slimeScript._speed = 0;
+            //disconnect the signal after stopping movement
+            foxPet.StopSlimeMovement -= OnStopSlimeMovement;
+            GD.Print($"Slime {slime.Name} movement stopped!");
         }
-  
     }
-    
+
     public override void _ExitTree()
     {
         if (foxPet != null)
@@ -98,5 +85,4 @@ public partial class SlimeManager : Node2D
             foxPet.StopSlimeMovement -= OnStopSlimeMovement;
         }
     }
-
 }
