@@ -50,22 +50,44 @@ public partial class SlimeManager : Node2D
 
     private void OnSlimeAttacked()
     {
-        GD.Print("Slime attacked by Fox");
-        EmitSignal(nameof(SlimeAttacked));
+        GD.Print("Slime attacked signal received by SlimeManager");
+        foreach (var child in GetChildren())
+        {
+            if (child is Slime attackedSlime)
+            {
+                attackedSlime.SlimeAttacked();
+                //unsubscribe from further attacks to prevent multiple attacks
+                foxPet.SlimeAttacked -= OnSlimeAttacked;
+                GD.Print("Slime attacked signal received by SlimeManager");
+                break; // Attack only one slime
+            }
+            else
+            {
+                GD.Print("No slime found to attack");
+            }
+        }
+        
     }
 
     private void OnStopSlimeMovement()
     {
-        if (!IsInstanceIdValid(slimeScript.GetInstanceId()))
+        GD.Print("Stop slime movement signal received by SlimeManager");
+        foreach (var child in GetChildren())
         {
-            GD.Print("Slime instance is no longer valid.");
-            return;
+            if (child is Slime attackedSlime)
+            {
+                attackedSlime._speed = 0;
+                //flip the slime to face the fox
+                attackedSlime.FlipH = foxPet.Position.X < attackedSlime.Position.X;
+                foxPet.StopSlimeMovement -= OnStopSlimeMovement;
+                GD.Print("Slime movement stopped");
+            }
+            else
+            {
+                GD.Print("No slime found to stop movement");
+            }
         }
-        //flipH slime to face fox
-        slimeScript.FlipH = foxPet.GlobalPosition.X < slimeScript.GlobalPosition.X;
-        slimeScript._speed = 0;
-        GD.Print("Slime movement stopped by Fox");
-        foxPet.StopSlimeMovement -= OnStopSlimeMovement;
+  
     }
     
     public override void _ExitTree()

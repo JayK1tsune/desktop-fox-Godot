@@ -233,7 +233,6 @@ public partial class FoxPet : Node2D
             _state = FoxState.AttackSlime;
             _sprite.Play("Attack");
             EmitSignal(nameof(StopSlimeMovement));
-
             var tcs = new TaskCompletionSource();
             void Handler()
             {
@@ -243,7 +242,7 @@ public partial class FoxPet : Node2D
             _sprite.AnimationFinished += Handler;
             await tcs.Task;
             OnAnimationFinished();
-
+            EmitSignal(nameof(SlimeAttacked));
             // After attack clear target so we don't re-attack instantaneously
             _targetSlime = null;
         }

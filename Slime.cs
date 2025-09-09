@@ -37,9 +37,7 @@ public partial class Slime : AnimatedSprite2D
         body.InputPickable = true;
         body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
         _currentAnimation = SpriteAnimations.Moving;
-        // Additional initialization code can go here
-        _slimeManager.SlimeAttacked += SlimeAttacked;
-
+    
     }
 
     public override void _Process(double delta)
@@ -128,11 +126,6 @@ public partial class Slime : AnimatedSprite2D
     {
         if (SlimeContainer.Instance != null)
         {
-            if (_slimeManager != null)
-            {
-                _slimeManager.SlimeAttacked -= SlimeAttacked;
-            }
-
             SlimeContainer.Instance.RemoveSlime(GetParent<Node2D>());
         }
     }
