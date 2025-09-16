@@ -10,6 +10,15 @@ public partial class SlimeContainer : Node
     [Export] public PackedScene slimePrefab;
     [Signal] public delegate void SlimeRemovedEventHandler(Node2D slime);
 
+    Godot.Collections.Array SlimeNames = new Godot.Collections.Array
+    {
+        "Billy",
+        "Dood",
+        "Valvatorez",
+        "Prinny",
+        "Kitsune"
+    };
+
     public static SlimeContainer Instance { get; private set; }
     public override void _Ready()
     {
@@ -63,9 +72,21 @@ public partial class SlimeContainer : Node
     public Node2D SpawnSlime()
     {
         Node2D newSlime = (Node2D)slimePrefab.Instantiate();
+        newSlime.Name = GetRandomSlimeName();
         AddChild(newSlime);
         slimes.Add(newSlime);
         return newSlime;
+    }
+
+    public string GetRandomSlimeName()
+    {
+        Random random = new Random();
+        if(SlimeNames.Count == 0 || SlimeNames == null)
+        {
+            return "Default";
+        }
+        int index = random.Next(SlimeNames.Count);
+        return (string)SlimeNames[index];
     }
 
 

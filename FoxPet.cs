@@ -52,6 +52,7 @@ public partial class FoxPet : Node2D
         clickThrough = GetNode<ClickThrough>("/root/Window/ClickThrough");
         UiScript = GetNode<Ui>("/root/Window/Ui_Root");
         slimeContainer = GetNode<SlimeContainer>("/root/Window/Slimes");
+        
 
         UpdateWorkArea();
         var tex = _sprite.SpriteFrames.GetFrameTexture(_sprite.Animation, _sprite.Frame);
@@ -63,7 +64,7 @@ public partial class FoxPet : Node2D
         if (body != null)
             body.Connect("input_event", new Callable(this, nameof(OnInputEvent)));
 
-        _sprite.AnimationFinished += OnAnimationFinished;
+
         slimeContainer.SlimeRemoved += OnSlimeRemoved;
 
         // Connect existing slimes
@@ -88,8 +89,7 @@ public partial class FoxPet : Node2D
         if (node is SlimeManager slimeManager)
             slimeManager.SlimeInRange += OnSlimeInRange;
         GD.Print("Connected to new slime's SlimeInRange signal.");
-        // Optionally, immediately check if the new slime is in range
-        OnSlimeInRange();
+
     }
 
     private void OnSlimeRemoved(Node2D slime)
@@ -115,7 +115,7 @@ public partial class FoxPet : Node2D
             {
                 _targetSlime = slime;
                 _state = FoxState.AttackSlime;
-                GD.Print("Fox: Slime in range, attacking!");
+                //GD.Print("Fox: Slime in range, attacking!");
             }
         
         }
@@ -201,16 +201,16 @@ public partial class FoxPet : Node2D
             BeginIdle();
     }
 
-    // AttackSlime now queries the slime's GLOBAL position so offsets inside the manager are handled
+    
     private async Task AttackSlime(Node2D slime, float delta)
     {
         if (slime == null || !IsInstanceValid(slime))
         {
+            GD.Print("Currently in Null check for slime.");
             _state = FoxState.Moving;
             _targetSlime = null;
             return;
         }
-
         Vector2 foxPos = GlobalPosition;
         float groundY = _workArea.Bottom - _spriteSize.Y - BottomOffset;
         foxPos.Y = groundY;
@@ -229,20 +229,12 @@ public partial class FoxPet : Node2D
         if (Mathf.Abs(slimePos.X - foxPos.X) < 40f)
         {
             _sprite.FlipH = foxPos.X > slimePos.X;
+            EmitSignal(nameof(StopSlimeMovement), slime);
             _state = FoxState.AttackSlime;
             _sprite.Play("Attack");
-            EmitSignal(nameof(StopSlimeMovement), slime);
-            var tcs = new TaskCompletionSource();
-            void Handler()
-            {
-                _sprite.AnimationFinished -= Handler;
-                tcs.SetResult();
-            }
-            _sprite.AnimationFinished += Handler;
-            await tcs.Task;
-            OnAnimationFinished();
+            await ToSignal(_sprite, "animation_finished");
             EmitSignal(nameof(SlimeAttacked), slime);
-            // After attack clear target so we don't re-attack instantaneously
+            GD.Print($"Fox: Attacking slime {slime.Name}!");
             _targetSlime = null;
         }
         else
@@ -283,10 +275,6 @@ public partial class FoxPet : Node2D
         return slimeNode.GlobalPosition;
     }
 
-    private void OnAnimationFinished()
-    {
-        EmitSignal(nameof(SlimeAttacked));
-    }
 
     private void BeginIdle()
     {

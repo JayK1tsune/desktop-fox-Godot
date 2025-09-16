@@ -36,6 +36,8 @@ public partial class SlimeManager : Node2D
         // Subscribe to fox signals
         foxPet.SlimeAttacked += OnSlimeAttacked;
         foxPet.StopSlimeMovement += OnStopSlimeMovement;
+
+        
     }
 
     private void OnFoxDetected()
@@ -56,6 +58,7 @@ public partial class SlimeManager : Node2D
             slimeScript.SlimeAttacked();
             //disconmnect the signal after attacking
             foxPet.SlimeAttacked -= OnSlimeAttacked;
+            slime.Name = "Hi Twitch!";
             GD.Print($"Slime {slime.Name} attacked!");
         }
     }

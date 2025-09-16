@@ -19,6 +19,11 @@ public partial class FoxButtons_UI : Button
     
     public void _on_button_pressed()
 	{
+        if(SlimeContainer.Instance.GetChildCount() >= 1)
+        {
+            GD.Print("Max Slimes Reached");
+            return;
+        }
 		GD.Print("Spawn More Button Pressed");
         SlimeContainer.Instance.SpawnSlime();
         GD.Print("Slimes in container: " + SlimeContainer.Instance.GetSlimes().Count);
